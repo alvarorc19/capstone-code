@@ -38,8 +38,17 @@
 *.app
 build/*
 
+# Outputs
+*.mp4
+*.gif
+analyze/*.html
+
 # debug information files
 *.dwo
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Direnv environments
+.direnv/*
+
