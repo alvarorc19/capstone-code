@@ -17,15 +17,21 @@
         system,
         ...
       }: {
-        # Per-system attributes can be defined here. The self' and inputs'
-        # module parameters provide easy access to attributes of the same
-        # system.
-
         devShells.default = pkgs.mkShell {
+          name = "c++ with pixi";
+          nativeBuildInputs = with pkgs; [
+            clang
+            clang-tools
+          ];
+          buildInputs = with pkgs; [
+            ffmpeg # for video generation
+          ];
           packages = with pkgs; [
             boost
             catch2
             cmake
+            pixi
+            pyright
           ];
         };
       };
