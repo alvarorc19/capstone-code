@@ -1,5 +1,5 @@
 {
-  description = "Developing in C++";
+  description = "Developing in C++ and python plotting";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -17,22 +17,33 @@
         system,
         ...
       }: {
+        packages.default = pkgs.callPackage ./default.nix {};
         devShells.default = pkgs.mkShell {
           name = "c++ with pixi";
           nativeBuildInputs = with pkgs; [
             clang
-            clang-tools
           ];
           buildInputs = with pkgs; [
             ffmpeg # for video generation
+            pyright
+            clang-tools
+            # hdfview
           ];
           packages = with pkgs; [
             boost
+            tomlplusplus
+            hdf5-cpp
+            highfive
             catch2
             cmake
             pixi
-            pyright
           ];
+          shellHook = ''
+            echo "pixi shell and c++ environment initialised"
+            clear
+            exec pixi shell
+            exec zsh
+          '';
         };
       };
     };

@@ -9,7 +9,7 @@ from IPython.display import HTML
 
 
 def generate_ising_grid(time_step:int, df:pd.DataFrame)->np.array:
-    L = 100
+    L = int(np.sqrt(df.shape[1]-1))
     ground_1d_grid = df.loc[time_step].to_numpy()[1:]
     ground_grid = np.array([ground_1d_grid[:L-1]])
     for i in range(1,L):

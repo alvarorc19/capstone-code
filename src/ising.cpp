@@ -6,20 +6,23 @@
 #include <string>
 #include <vector>
 
-std::vector<int> initialise_lattice(int L);
-double compute_energy_at_site(int x, int y, std::vector<int> lattice);
-double compute_total_energy(std::vector<int> lattice);
-void metropolis_algorithm(std::vector<int> &lattice, double beta);
-void writer(int iteration, std::vector<int> lattice, std::ofstream &file);
+using ivec = std::vector<int>;
+ivec initialise_lattice(int L);
+double compute_energy_at_site(int x, int y, ivec lattice);
+double compute_total_energy(ivec lattice, double J, double H);
+void metropolis_algorithm(ivec &lattice, double beta, double J, double H);
+void writer(int iteration, ivec lattice, std::ofstream &file);
 
 int main(int argc, char *argv[]) {
     std::ofstream ofs("results.csv");
 
-    int L = 100;
-    std::vector<int> lattice;
+    int L = 20;
+    double J = -30;
+    double H = -200;
+    ivec lattice;
     lattice = initialise_lattice(L);
-    double beta = 10000;
-    int num_iterations = 100000;
+    double beta = 100;
+    int num_iterations = 10000;
 
     // Header of file
     ofs << "#t";
@@ -32,19 +35,21 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Starting simulation" << std::endl;
     for (int i = 0; i < num_iterations - 1000; ++i) {
-        metropolis_algorithm(lattice, beta);
+        metropolis_algorithm(lattice, beta, J, H);
+        writer(i, lattice, ofs);
+        // std::cout << "step " << i << "\n";
     }
     for (int i = num_iterations - 1000; i < num_iterations; ++i) {
         writer(i, lattice, ofs);
-        metropolis_algorithm(lattice, beta);
+        metropolis_algorithm(lattice, beta, J, H);
     }
     std::cout << "Simulation ended" << std::endl;
     ofs.close();
 };
 // TODO: add dimension parameter
 // K(i,j) = i * L + j, always try to do row iteration
-std::vector<int> initialise_lattice(int L) {
-    std::vector<int> lattice;
+ivec initialise_lattice(int L) {
+    ivec lattice;
     // generate random int array of 0 and 1
     lattice = rng::random_int_array(rng::engine, L * L);
 
@@ -56,7 +61,7 @@ std::vector<int> initialise_lattice(int L) {
     return lattice;
 };
 
-double compute_energy_at_site(int i, int j, std::vector<int> lattice) {
+double compute_energy_at_site(int i, int j, ivec lattice) {
     double energy;
     int L = sqrt(lattice.size());
     int sign_change = lattice[i * L + j];
@@ -71,33 +76,36 @@ double compute_energy_at_site(int i, int j, std::vector<int> lattice) {
     return energy;
 };
 
-double compute_total_energy(std::vector<int> lattice) {
-    double total_energy = 0;
+double compute_total_energy(ivec lattice, double J, double H) {
+    double site_energy = 0;
+    double magnetic_energy = 0;
     int L = sqrt(lattice.size());
-    for (int i; i < L; ++i) {
-        for (int j; j < L; ++j) {
-            total_energy += compute_energy_at_site(i, j, lattice);
+    for (int i = 0; i < L; ++i) {
+        for (int j = 0; j < L; ++j) {
+            site_energy += compute_energy_at_site(i, j, lattice);
+            magnetic_energy += lattice[i * L + j];
         };
     };
     // Divide by 2 to account for over counting
-    return total_energy / 2;
+    double total_energy = -J * (site_energy / 2) - H * magnetic_energy;
+    return total_energy;
 };
 
-void metropolis_algorithm(std::vector<int> &lattice, double beta) {
+void metropolis_algorithm(ivec &lattice, double beta, double J, double H) {
     int L = sqrt(lattice.size());
-    std::vector<int> indices = rng::random_int_array(rng::engine, 2, 0, L - 1);
+    ivec indices = rng::random_int_array(rng::engine, 2, 0, L - 1);
 
     int i = indices[0];
     int j = indices[1];
 
     // Flip spin of site
-    std::vector<int> new_lattice = lattice;
+    ivec new_lattice = lattice;
     new_lattice[i * L + j] = -new_lattice[i * L + j];
 
     // Calculate energy difference, by brute force
     // Calculate energy in a smarter way?
-    double energy_diff =
-        compute_total_energy(new_lattice) - compute_total_energy(lattice);
+    double energy_diff = compute_total_energy(new_lattice, J, H) -
+                         compute_total_energy(lattice, J, H);
 
     double r = rng::random_real_number(rng::engine);
 
@@ -109,7 +117,7 @@ void metropolis_algorithm(std::vector<int> &lattice, double beta) {
     }
 }
 
-void writer(int iteration, std::vector<int> lattice, std::ofstream &file) {
+void writer(int iteration, ivec lattice, std::ofstream &file) {
     file << iteration;
     for (auto &i : lattice) {
         file << "," << i;

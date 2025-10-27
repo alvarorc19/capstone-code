@@ -37,6 +37,7 @@
 *.out
 *.app
 build/*
+result/
 
 # Outputs
 *.mp4
