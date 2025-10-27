@@ -43,6 +43,8 @@ result/
 *.mp4
 *.gif
 analyze/*.html
+analyze/*.mp4
+analyze/*.gif
 
 # debug information files
 *.dwo
