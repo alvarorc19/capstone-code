@@ -33,7 +33,7 @@
             boost
             tomlplusplus
             hdf5-cpp
-            highfive
+            # highfive
             catch2
             cmake
             pixi
