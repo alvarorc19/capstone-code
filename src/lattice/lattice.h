@@ -16,10 +16,12 @@ template <typename T>
 class Lattice {
     protected:
         // Variables or objects
-        int lattice_dim;
-        int lattice_length;
+        const int lattice_dim;
+        const int lattice_length;
+        const int particle_num;
         ivec neighbours_table;
         std::vector<T> lattice;
+        // Are these two necessaries??
         HighFive::File output_file;
         HighFive::DataSet lattice_set;
 
@@ -39,12 +41,13 @@ class Lattice {
         virtual ~Lattice() =default;
 
         // Constructor
-        Lattice(int L, int dim): lattice_dim(dim), lattice_length(L) {} // Done
+        Lattice(int L, int dim): lattice_dim(dim), lattice_length(L), particle_num(dim*L) {} // Done
         // Getters
         int get_1d_index(ivec indices);
         int get_lattice_total_length() {return std::pow(lattice_length, lattice_dim);};
         int get_lattice_length() { return lattice_length;}
         int get_lattice_dim() { return lattice_dim;}
+        int get_particle_num() { return particle_num;}
         virtual const std::vector<T>& get_lattice() const {return lattice;}
         virtual std::vector<T>& get_lattice(){return lattice;}
 
@@ -55,6 +58,7 @@ class Lattice {
         virtual std::vector<T> get_neighbours_array(ivec indices);
         virtual std::vector<T> get_neighbours_array(int index);
 
+        // Might not need this after all
         void writer();
 };
 #endif

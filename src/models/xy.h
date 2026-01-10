@@ -10,17 +10,15 @@
 using ivec = std::vector<int>;
 using dvec = std::vector<double>;
 
-class PottsModel : public Model<double> {
+class XYModel : public Model<double> {
   private:
     dvec vec_H;
     double H;
     int q;
     DoubleLattice lattice_obj;
 
-    int delta_function(int a, int b);
-
   public:
-    PottsModel(double beta, double J, dvec vec_H, int H, int dim, int L, int q)
+    XYModel(double beta, double J, dvec vec_H, int H, int dim, int L, int q)
         : Model(beta, J), H(H),vec_H(vec_H), q(q) {
         lattice_obj = DoubleLattice(dim, L)
     }

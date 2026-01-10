@@ -1,9 +1,12 @@
+#include "simulation/simulation.h"
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
 #include <vector>
+#include <memory>
+#include <toml++/toml.hpp>
 
 /*****************************************
  * What is the algorithm process?
@@ -40,6 +43,19 @@ int main(int argc, char *argv[]){
         if (!project_folder.empty()) {
             std::cout << "Using project folder: ./" << projectFolder << std::endl;
         }     
+    
+    try{ 
 
-
+    // Not memory safe
+    Simulation *sim = new Simulation();
+    // More memory safe (smart pointers)
+    std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
+    sim->parse_parameters(project_folder, running_model);
+    sim->run();
+    return 0;
+    }
+    catch (const std::invalid_argument& e) {
+        std::cerr << "Configuration error: " << e.what() << std::endl;
+        return 4;
+    }
 }

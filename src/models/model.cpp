@@ -12,12 +12,12 @@ using dvec = std::vector<double>;
 // e^-\beta H
 template <typename T>
 double Model<T>::compute_single_partition_function() {
-    int total_energy = compute_total_energy();
+    T total_energy = compute_total_energy();
     
     double z = exp(- beta * total_energy);
 
     return z;
-}
+};
 
 template <typename T>
 double Model<T>::compute_average_energy(std::vector<T> energies) {
@@ -28,7 +28,7 @@ double Model<T>::compute_average_energy(std::vector<T> energies) {
     
     return avg_e / energies.size();
 
-}
+};
 
 template <typename T>
 double Model<T>::compute_heat_capacity(std::vector<T> energies) {

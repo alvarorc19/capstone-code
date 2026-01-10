@@ -92,3 +92,20 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
     return neighbours_array;
 }
 
+
+template<class T>
+void Lattice<T>::write_lattice(HighFive::DataSet& lattice_set, int time) {
+    std::vector<size_t> new_dims = {static_cast<size_t>(time + 1), static_cast<size_t>(N)};
+    lattice_set.resize(new_dims);
+
+    // Generate arrays to select new stuff
+    std::vector<size_t> offset = {static_cast<size_t>(time), 0};
+    std::vector<size_t> extent = {1, static_cast<size_t>(N)}; 
+
+    // Put lattice in vector
+    std::vector<T> data_to_write = {lattice}; 
+
+    // Write the 1xN slice (new row) to the dataset
+    lattice_set.select(offset, extent).write(data_to_write);
+}
+
