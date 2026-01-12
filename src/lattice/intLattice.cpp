@@ -36,12 +36,12 @@ ivec IntLattice::generate_lattice(int L , int dim, int q) {
     return temp_lattice;
 }
 
-int IntLattice::get_lattice_site(ivec indices) {
+int& IntLattice::get_lattice_site(ivec indices) {
     int index = get_1d_index(indices);
     return lattice[index];
 }
 
-int IntLattice::get_lattice_site(int index) {
+int& IntLattice::get_lattice_site(int index) {
     return lattice[index];
 }
 

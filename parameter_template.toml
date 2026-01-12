@@ -4,6 +4,8 @@ L = 10
 dimension = 2
 J = 1
 potts_q = 3
+H = 1.0
+vec_H = [0.0,1.0,2.0]
 
 
 [simulation_settings]

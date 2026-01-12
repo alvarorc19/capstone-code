@@ -18,12 +18,12 @@ dvec DoubleLattice::generate_lattice(int L , int dim) {
     return temp_lattice;
 }
 
-double DoubleLattice::get_lattice_site(ivec indices) {
+double &DoubleLattice::get_lattice_site(ivec indices) {
     int index = get_1d_index(indices);
     return lattice[index];
 }
 
-double DoubleLattice::get_lattice_site(int index) {
+double &DoubleLattice::get_lattice_site(int index) {
     return lattice[index];
 }
 

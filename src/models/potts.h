@@ -15,27 +15,23 @@ class PottsModel : public Model<int> {
     dvec vec_H;
     double H;
     int q;
-    IntLattice lattice_obj;
 
     int delta_function(int a, int b);
 
   public:
-    PottsModel(double beta, double J, dvec vec_H, int H, int dim, int L, int q)
-        : Model(beta, J), H(H),vec_H(vec_H), q(q) {
-        lattice_obj = IntLattice(dim, L)
+    PottsModel(double temp, double J, dvec vec_H, int H, int dim, int L, int q)
+        : Model<int>(temp, J), H(H),vec_H(vec_H), q(q) {
+        this->lattice_obj = std::make_unique<IntLattice>(L,dim,q);
     }
 
-        int compute_total_spin_at_site(int index);
-        int compute_spin_neighbours_term(int index);
-        int compute_spin_neighbours_term(ivec indices);
-        int compute_spin_magnetic_term(int index);
-        int compute_spin_magnetic_term(ivec indices);
-        void change_spin_randomly(int index);
-        void change_spin_randomly(ivec indices);
-
-        double compute_magnetisation();
-        int compute_total_energy();
-        int compute_energy_diff();
+        int compute_spin_neighbours_term(int index) override;
+        int compute_spin_neighbours_term(ivec indices) override;
+        int compute_spin_magnetic_term(int dim) override;
+        int compute_spin_magnetic_term() override{return 0;};
+        double compute_total_energy() override;
+        double compute_magnetisation() override;
+        void change_spin_randomly(ivec indices) override;
+        double compute_energy_diff_flip() override;
 };
 
 #endif

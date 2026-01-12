@@ -1,5 +1,6 @@
 #include "simulation/simulation.h"
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -41,18 +42,15 @@ int main(int argc, char *argv[]){
         }
 
         if (!project_folder.empty()) {
-            std::cout << "Using project folder: ./" << projectFolder << std::endl;
+            std::cout << "Using project folder: " << std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder) << "\n";
         }     
     
     try{ 
-
-    // Not memory safe
-    Simulation *sim = new Simulation();
-    // More memory safe (smart pointers)
-    std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
-    sim->parse_parameters(project_folder, running_model);
-    sim->run();
-    return 0;
+        // Using smart pointers
+        std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
+        sim->parse_parameters(project_folder, running_model);
+        sim->run();
+        return 0;
     }
     catch (const std::invalid_argument& e) {
         std::cerr << "Configuration error: " << e.what() << std::endl;

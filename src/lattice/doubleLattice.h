@@ -12,16 +12,16 @@ using ivec = std::vector<int>;
 class DoubleLattice : public Lattice<double> {
 
     private:
-       dvec generate_lattice(int L, int dim);
+       dvec generate_lattice(int L, int dim) override;
 
     public:
         DoubleLattice(const int L, const int dim);
 
-        double get_lattice_site(ivec indices);
-        double get_lattice_site(int index);
+        double& get_lattice_site(ivec indices) override;
+        double& get_lattice_site(int index) override;
 
-        std::vector<double> get_neighbours_array(ivec indices);
-        std::vector<double> get_neighbours_array(int index);
+        dvec get_neighbours_array(ivec indices) override;
+        dvec get_neighbours_array(int index) override;
 
 };
 

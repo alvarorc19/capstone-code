@@ -42,9 +42,12 @@ result/
 # Outputs
 *.mp4
 *.gif
+*.h5
 analyze/*.html
 analyze/*.mp4
 analyze/*.gif
+projects/*
+!projects/demo/config.toml
 
 # debug information files
 *.dwo
@@ -54,4 +57,7 @@ analyze/*.gif
 
 # Direnv environments
 .direnv/*
+
+# Documentation generated
+docs/*
 

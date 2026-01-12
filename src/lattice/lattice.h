@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include <hdf5.h>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 
@@ -21,13 +20,10 @@ class Lattice {
         const int particle_num;
         ivec neighbours_table;
         std::vector<T> lattice;
-        // Are these two necessaries??
-        HighFive::File output_file;
-        HighFive::DataSet lattice_set;
 
         // // Methods
         // Generate the lattices and tables
-        virtual std::vector<T> generate_lattice(int L, int dim);
+        virtual std::vector<T> generate_lattice(int L, int dim) = 0;
         ivec calculate_neighbours_table(int L, int dim);
 
     public:
@@ -41,24 +37,26 @@ class Lattice {
         virtual ~Lattice() =default;
 
         // Constructor
-        Lattice(int L, int dim): lattice_dim(dim), lattice_length(L), particle_num(dim*L) {} // Done
+        Lattice(int L, int dim): lattice_dim(dim), lattice_length(L), particle_num(std::pow(L, dim)) {} // Done
         // Getters
         int get_1d_index(ivec indices);
+        //TODO is this redundant??
         int get_lattice_total_length() {return std::pow(lattice_length, lattice_dim);};
         int get_lattice_length() { return lattice_length;}
         int get_lattice_dim() { return lattice_dim;}
         int get_particle_num() { return particle_num;}
-        virtual const std::vector<T>& get_lattice() const {return lattice;}
-        virtual std::vector<T>& get_lattice(){return lattice;}
+        const std::vector<T>& get_lattice() const {return lattice;}
+        std::vector<T>& get_lattice(){return lattice;}
 
         //Type specific
-        virtual T get_lattice_site(ivec indices);
-        virtual T get_lattice_site(int index);
+        virtual T& get_lattice_site(ivec indices) = 0;
+        virtual T& get_lattice_site(int index) = 0;
 
-        virtual std::vector<T> get_neighbours_array(ivec indices);
-        virtual std::vector<T> get_neighbours_array(int index);
+        virtual std::vector<T> get_neighbours_array(ivec indices) = 0;
+        virtual std::vector<T> get_neighbours_array(int index) = 0;
 
-        // Might not need this after all
-        void writer();
 };
+
+#include "lattice/lattice.tpp"
+
 #endif

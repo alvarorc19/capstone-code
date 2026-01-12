@@ -31,6 +31,7 @@
           ];
           packages = with pkgs; [
             boost
+            doxygen
             tomlplusplus
             hdf5-cpp
             # highfive

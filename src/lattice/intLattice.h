@@ -16,17 +16,17 @@ class IntLattice : public Lattice<int> {
 
         // Specifically for Potts' model
         ivec generate_lattice(int L, int dim, int q); 
-        ivec generate_lattice(int L, int dim, int q);
+        ivec generate_lattice(int L, int dim) override;
 
     public:
-        IntLattice(int L , int dim, int q); // Done
-        IntLattice(int L , int dim); // Done
+        IntLattice(int L , int dim, int q);
+        IntLattice(int L , int dim);
 
-        int get_lattice_site(ivec indices);
-        int get_lattice_site(int index);
+        int& get_lattice_site(ivec indices) override;
+        int& get_lattice_site(int index) override;
 
-        ivec get_neighbours_array(ivec indices);
-        ivec get_neighbours_array(int index);
+        ivec get_neighbours_array(ivec indices) override;
+        ivec get_neighbours_array(int index) override;
 
 };
 

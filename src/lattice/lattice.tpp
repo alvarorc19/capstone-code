@@ -4,7 +4,6 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include <hdf5.h>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 
@@ -48,9 +47,9 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
                 // Down
                 neighbours_array[4 * index + 1] = i_down * L + j;
                 // Right
-                neighbours_array[4 * index + 2] = j_up * L + r;
+                neighbours_array[4 * index + 2] = j_up * L + i;
                 // Left
-                neighbours_array[4 * index + 3] = j_down * L + l;
+                neighbours_array[4 * index + 3] = j_down * L + i;
             }
         }
 
@@ -90,22 +89,5 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
         exit(2);
     }
     return neighbours_array;
-}
-
-
-template<class T>
-void Lattice<T>::write_lattice(HighFive::DataSet& lattice_set, int time) {
-    std::vector<size_t> new_dims = {static_cast<size_t>(time + 1), static_cast<size_t>(N)};
-    lattice_set.resize(new_dims);
-
-    // Generate arrays to select new stuff
-    std::vector<size_t> offset = {static_cast<size_t>(time), 0};
-    std::vector<size_t> extent = {1, static_cast<size_t>(N)}; 
-
-    // Put lattice in vector
-    std::vector<T> data_to_write = {lattice}; 
-
-    // Write the 1xN slice (new row) to the dataset
-    lattice_set.select(offset, extent).write(data_to_write);
 }
 

@@ -1,9 +1,9 @@
 #ifndef SIMULATIONPARAMETERS_H
 #define SIMULATIONPARAMETERS_H
 #include <iostream>
+#include <filesystem>
 #include <string>
 #include <vector>
-#include <hdf5.h>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 // Include highfive?
@@ -31,14 +31,18 @@
 struct SimulationParameters {
     HighFive::DataSet lattice_set;
     std::string model_type;
+    std::filesystem::path project_folder_path;
     int L;
     int dim;
     double T;
+    double beta;
     double J;
     int potts_q;
     int time_steps;
+    double H;
+    std::vector<double> vec_H;
     // Always records the last X steps
-    int recording_steps;
+    size_t recording_steps;
     bool record_magnetisation = true;
     bool record_energy = true;
     bool record_susceptibility = false;

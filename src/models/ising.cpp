@@ -1,31 +1,28 @@
 #include "models/ising.h"
-#include "ising.h"
+#include "random.h"
 #include <iostream>
 #include <string>
 #include <vector>
 
 using ivec = std::vector<int>;
 
-//TODO: see how energy is handeled here
-// -  Two options:
-//    1. Calculate spin stuff in one and then add them all up
-//    2. Calculate per site and then just add all the sites
-//       - Problem: need to account for the 1/2 in the neighbours term
-
 // H = -J \sum _{ij} s_i s_j - H \sum_i s_i
-int IsingModel::compute_spin_magnetic_term(ivec indices) {
-    return lattice_obj.get_lattice_site(indices);
+int IsingModel::compute_spin_neighbours_term(int index) {
+    ivec neigh_array = lattice_obj->get_neighbours_array(index);
+    int sign_change = lattice_obj->get_lattice_site(index);
+    int neigh_sum = 0;
     
-}
+    for (auto& i : neigh_array) {
+        neigh_sum+= i;
+    }
 
-int IsingModel::compute_spin_magnetic_term(int index) {
-    return lattice_obj.get_lattice_site(index);
-    
+    return neigh_sum * sign_change;
+
 }
 
 int IsingModel::compute_spin_neighbours_term(ivec indices) {
-    ivec neigh_array = lattice_obj.get_neighbous_array(indices);
-    int sign_change = lattice_obj.get_lattice_site(indices);
+    ivec neigh_array = lattice_obj->get_neighbours_array(indices);
+    int sign_change = lattice_obj->get_lattice_site(indices);
     int neigh_sum = 0;
     
     for (auto& i : neigh_array) {
@@ -36,55 +33,47 @@ int IsingModel::compute_spin_neighbours_term(ivec indices) {
 
 }
 
-int IsingModel::compute_spin_neighbours_term(int index) {
-    ivec neigh_array = lattice_obj.get_neighbous_array(index);
-    int sign_change = lattice_obj.get_lattice_site(index);
-    int neigh_sum = 0;
-    
-    for (auto& i : neigh_array) {
-        neigh_sum+= i;
+int IsingModel::compute_spin_magnetic_term() {
+    int magnetic_sum = 0;
+    for (auto &i: lattice_obj->get_lattice()) {
+        magnetic_sum += i;
     }
-
-    return neigh_sum * sign_change;
-
+    return magnetic_sum;
 }
 
-
-int IsingModel::compute_total_energy() {
-    int total_energy;
+double IsingModel::compute_total_energy() {
+    double total_energy;
     int neigh_energy = 0;
-    int magnetic_energy = 0;
-    int N = lattice_obj.get_lattice_total_length();
+    int magnetic_energy = compute_spin_magnetic_term();
+    int N = lattice_obj->get_lattice_total_length();
 
     for (int i = 0; i < N; i++) {
         neigh_energy += compute_spin_neighbours_term(i);
-        magnetic_energy += compute_spin_magnetic_term(i);
     }
     
-    total_energy = -J * (1 / 2) * neigh_energy - H * magnetic_energy;
+    total_energy = -J * 0.5 * neigh_energy - H * magnetic_energy;
     return total_energy;
 }
 
 double IsingModel::compute_magnetisation() {
-    int magnetisation = 0;
-    ivec lattice = lattice_obj.get_lattice();
-    for (auto&i:lattice) {
-       magnetisation += i; 
-    }
-    return magnetisation / lattice_obj.get_lattice_total_length();
+    int magnetisation = compute_spin_magnetic_term();
+    return magnetisation / lattice_obj->get_lattice_total_length();
 }
 
 void IsingModel::change_spin_randomly(ivec indices) {
-    int index = lattice_obj.get_1d_index(indices);
-    int random_number = rng::random_int_concert(rng::engine, 0,q);
-    ivec lattice = lattice_obj.get_lattice();
+    int index = lattice_obj->get_1d_index(indices);
+    old_lattice = lattice_obj->get_lattice();
+    ivec &lattice = lattice_obj->get_lattice();
     
-    lattice[index] = random_number;
+    lattice[index] *= -1;
 }
 
-void IsingModel::change_spin_randomly(int index) {
-    int random_number = rng::random_int_concert(rng::engine, 0,q);
-    ivec lattice = lattice_obj.get_lattice();
-    
-    lattice[index] = random_number;
+double IsingModel::compute_energy_diff_flip() {
+    double energy_diff=0;
+    ivec random_indices = rng::random_int_array(rng::engine, lattice_obj->get_lattice_dim(), 0, lattice_obj->get_lattice_length() - 1);
+    int spin = lattice_obj->get_lattice_site(random_indices);
+    energy_diff = 2*J * spin * compute_spin_neighbours_term(random_indices) + 2*H*spin;
+    change_spin_randomly(random_indices);
+
+    return energy_diff;
 }
