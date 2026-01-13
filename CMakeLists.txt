@@ -34,14 +34,14 @@ FetchContent_MakeAvailable(highfive)
 include_directories(BEFORE SYSTEM ${highfive_SOURCE_DIR}/include ${highfive_BINARY_DIR}/include)
 
 
-# FetchContent_Declare(
-#         tomlplusplus
-#         GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-#         GIT_TAG v3.4.0
-# )
-# FetchContent_GetProperties(tomlplusplus)
-# FetchContent_MakeAvailable(tomlplusplus)
-# include_directories(BEFORE SYSTEM ${tomlplusplus_SOURCE_DIR}/include ${tomlplusplus_BINARY_DIR}/include)
+FetchContent_Declare(
+        tomlplusplus
+        GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+        GIT_TAG v3.4.0
+)
+FetchContent_GetProperties(tomlplusplus)
+FetchContent_MakeAvailable(tomlplusplus)
+include_directories(BEFORE SYSTEM ${tomlplusplus_SOURCE_DIR}/include ${tomlplusplus_BINARY_DIR}/include)
 
 ## Subdirectories
 add_subdirectory(src)

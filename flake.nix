@@ -33,8 +33,8 @@
             boost
             doxygen
             tomlplusplus
-            hdf5-cpp
-            # highfive
+            # hdf5-cpp
+            highfive
             catch2
             cmake
             pixi

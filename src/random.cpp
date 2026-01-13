@@ -5,6 +5,10 @@
 
 const double PI = 3.141592653589793238463;
 
+void rng::update_seed(int new_seed) {
+    engine.seed(new_seed);
+}
+
 double rng::random_real_number(std::mt19937 & engine) {
     std::uniform_real_distribution<double> uniform_dist(0,1);
     return uniform_dist(engine);

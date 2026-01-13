@@ -42,14 +42,27 @@ int main(int argc, char *argv[]){
         }
 
         if (!project_folder.empty()) {
-            std::cout << "Using project folder: " << std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder) << "\n";
+            // Assuming it's being executed from build folder
+            std::filesystem::path project_path = std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder);
+            std::cout << "Using project folder: " << project_path << "\n";
         }     
+
     
     try{ 
-        // Using smart pointers
-        std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
-        sim->parse_parameters(project_folder, running_model);
-        sim->run();
+        // Iterate over the different directories
+        std::filesystem::path project_path = std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder);
+        std::vector<std::filesystem::path> directories;
+        // Separate this for easier parallelisation implementation
+        for (auto const& dir_entry : std::filesystem::directory_iterator{project_path}){ 
+            std::cout <<"dir entry path"<< dir_entry.path() << '\n';
+            directories.push_back(dir_entry.path());
+        }
+        for (int i = 0; i < directories.size(); i++){
+            // Using smart pointers
+            std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
+            sim->parse_parameters(directories[i], running_model);
+            sim->run();
+        }
         return 0;
     }
     catch (const std::invalid_argument& e) {

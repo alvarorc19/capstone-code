@@ -18,17 +18,15 @@
 using ivec = std::vector<int>;
 using dvec = std::vector<double>;
 
-void Simulation::parse_parameters(std::string project_folder, std::string model_type) {
+void Simulation::parse_parameters(std::filesystem::path project_folder_path, std::string model_type) {
     toml::table tbl;
-    std::filesystem::path project_folder_path = std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder);
-    std::cout << "Project folder path 2: " << project_folder_path << "\n";
-
+    // std::filesystem::path project_folder_path = std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder);
     // careful with this, has not been tested
     try
     {
         std::filesystem::path config_path = project_folder_path / std::filesystem::path("config.toml");
         tbl = toml::parse_file(config_path.string());
-        std::cout << tbl << "\n";
+        // std::cout << tbl << "\n";
     }
     catch (const toml::parse_error& err)
     {
@@ -36,6 +34,10 @@ void Simulation::parse_parameters(std::string project_folder, std::string model_
         std::cerr << "Parsing failed:\n" << err << "\n";
         // return 2;
     }
+
+    // Assign the seed
+    int seed = static_cast<int>(tbl["seed"].value_or<int64_t>(0));
+    rng::update_seed(seed);
 
     // Assign all the parameters to the struct
     parameters.project_folder_path = project_folder_path;
@@ -125,7 +127,8 @@ void Simulation::initialise_writing() {
     std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, N}; 
     
     // Define chunks, how data is stored
-    std::vector<size_t> chunk_dims = {parameters.recording_steps, N};
+    size_t chunk_rows = std::min(parameters.recording_steps, static_cast<size_t>(375));
+    std::vector<size_t> chunk_dims = {chunk_rows, N};
 
     HighFive::DataSpace lattice_space(current_dims, max_dims);
     HighFive::DataSetCreateProps props;

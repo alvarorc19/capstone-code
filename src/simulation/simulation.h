@@ -5,6 +5,7 @@
 #include "models/modelBase.h"
 #include <iostream>
 #include <vector>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <cmath>
@@ -32,7 +33,7 @@ class Simulation {
 
     public:
         Simulation() =default;
-        void parse_parameters(std::string project_folder, std::string model_type);
+        void parse_parameters(std::filesystem::path project_folder_path, std::string model_type);
         void initialise_model();
         void initialise_writing();
         void run();
