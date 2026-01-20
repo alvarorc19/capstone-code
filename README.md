@@ -1,5 +1,5 @@
 # Characterisation of the XY model
-
+<!--
 ## Ising model
 Defined by Hamiltonian\
 $$H = E = -J \sum_{\langle i j \rangle}s_i s_j - h \sum_i s_i.$$ 
@@ -38,3 +38,4 @@ $$H = E = -J \sum_{\langle i j \rangle}s_i s_j - h \sum_i s_i.$$
 - Code cluster algorithm
 - Make parser that reads from the terminal and then from a toml file
     - This is in conjunction to creating a folder where the hdf5 file would be dumped as well as the log file
+-->
