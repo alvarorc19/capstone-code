@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <omp.h>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 #include <toml++/toml.hpp>
@@ -65,21 +66,33 @@ void Simulation::run() {
 
     initialise_model();
 
-    for(int i = 0; i < parameters.time_steps - parameters.recording_steps; i++){
+    for(int i = 0; i < parameters.time_steps - (parameters.recording_steps * std::pow(parameters.L, parameters.dim)); i++){
         do_metropolis_step();
         time_step++;
+        // #pragma omp critical
+        // {
+        //     std::cout << "Thermalisation step temp = " << parameters.T <<" = " << i <<"\n";
+        // }
     }
-
-    initialise_writing();
+    // #pragma omp critical
+    // {
+    // std::cout << "Finished thermalisation, starting writing" << "\n";
+    // }
 
     for(int i = 0; i < parameters.recording_steps; i++){
-        do_metropolis_step();
-        write_lattice(time_step);
-        update_observables();
-        time_step++;
+        time_step = do_metropolis_recording_sweep(time_step);
+        write_lattice(i);
+        // #pragma omp critical
+        // {
+        // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+        // }
     }
-
     write_observables();
+    file->flush();
+    #pragma omp critical
+    {
+        std::cout << "Finished run for " << parameters.project_folder_path.filename() << "\n";
+    }
 }
 
 void Simulation::initialise_model() {
@@ -149,7 +162,7 @@ void Simulation::initialise_writing() {
         );
     }
     else { 
-        std::cout << "IDK bro" << "\n";
+        throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
     }
     
     observables.energy_array.reserve(parameters.recording_steps);
@@ -163,6 +176,16 @@ void Simulation::do_metropolis_step() {
     if (r > probability) {
         model->revert_state_of_system();
     }
+}
+
+int Simulation::do_metropolis_recording_sweep(int time_step) {
+    size_t N = std::pow(parameters.L, parameters.dim);
+    for (int i = 0; i < N; i++){
+        do_metropolis_step();
+        update_observables();
+        time_step++;
+    }
+    return time_step;
 }
 
 ivec Simulation::extract_int_vector_toml(const toml::array & array){

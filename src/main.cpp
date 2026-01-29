@@ -8,25 +8,19 @@
 #include <vector>
 #include <memory>
 #include <toml++/toml.hpp>
+#include <omp.h>
 
-/*****************************************
- * What is the algorithm process?
- *  1. get from argv location of toml file
- *  2. get parameters from toml
- *      - create a struct where to store all of them
- *  3. create h5 file
- *  4. select model with toml file
- *  5. initialise matrices and models
- *  6. select algorithm
- *  7. run algorithm
- *  8. write while the algorithm is running 
- *      beware with memory!!!
- *  9. close h5 file and exit simulation
- *  ! Error handling, assertions
- ****************************************/
+/**
+ * @brief Main function to run the simulation
+ * 
+ * @param argc Number of arguments
+ * @param argv Array of arguments
+ * @return int Exit code
+ */
 int main(int argc, char *argv[]){
     std::string project_folder;
     std::string running_model;
+    int num_threads = 4;
 
         for (int i = 1; i < argc; ++i) {
             std::string arg = argv[i];
@@ -39,6 +33,10 @@ int main(int argc, char *argv[]){
                 running_model = argv[i + 1];
                 ++i;
             }
+            else if (arg == "-j" && i + 1 < argc){
+                num_threads = std::stoi(argv[i + 1]);
+                ++i;
+            }
         }
 
         if (!project_folder.empty()) {
@@ -49,19 +47,42 @@ int main(int argc, char *argv[]){
 
     
     try{ 
-        // Iterate over the different directories
+        omp_set_num_threads(num_threads);
         std::filesystem::path project_path = std::filesystem::current_path().parent_path() / std::filesystem::path(project_folder);
         std::vector<std::filesystem::path> directories;
+
         // Separate this for easier parallelisation implementation
+        // Iterate over the different directories
         for (auto const& dir_entry : std::filesystem::directory_iterator{project_path}){ 
-            std::cout <<"dir entry path"<< dir_entry.path() << '\n';
-            directories.push_back(dir_entry.path());
+            int i = 1;
+            if (dir_entry.is_directory()) {
+                std::cout <<"Path of combination "<< i << ": " << dir_entry.path().filename() << '\n';
+                directories.push_back(dir_entry.path());
+                i++;
+            }
         }
+        std::cout << "Number of parameters = " << directories.size() << "\n";
+        #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < directories.size(); i++){
-            // Using smart pointers
+            // out commands need to be wrapped around this
+            #pragma omp critical
+            {
+            std::cout << "Starting parameter combination number " << i +1 << " out of " <<
+                directories.size() << "\n";
+            }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             sim->parse_parameters(directories[i], running_model);
+            // Initialise in critical since multithreading messes up writing
+            #pragma omp critical(hdf5_init)
+            {
+                sim->initialise_writing();
+            }
             sim->run();
+
+            #pragma omp critical 
+            {
+            std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size()<< "\n";
+            }
         }
         return 0;
     }
