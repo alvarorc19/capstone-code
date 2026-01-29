@@ -9,6 +9,7 @@
 #include <memory>
 #include <toml++/toml.hpp>
 #include <omp.h>
+#include <cstdio>
 
 /**
  * @brief Main function to run the simulation
@@ -20,6 +21,9 @@
 int main(int argc, char *argv[]){
     std::string project_folder;
     std::string running_model;
+    // Has the output and error to txt files
+    (void)std::freopen("output.txt", "w", stdout);
+    (void)std::freopen("error.txt", "w", stderr);
     int num_threads = 4;
 
         for (int i = 1; i < argc; ++i) {
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]){
                 i++;
             }
         }
-        std::cout << "Number of parameters = " << directories.size() << "\n";
+        std::cout << "Number of parameters = " << directories.size() << std::endl;
         #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < directories.size(); i++){
             // out commands need to be wrapped around this
@@ -81,7 +85,7 @@ int main(int argc, char *argv[]){
 
             #pragma omp critical 
             {
-            std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size()<< "\n";
+            std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size()<< std::endl;
             }
         }
         return 0;
