@@ -39,6 +39,10 @@
 build/*
 result/
 
+# Output
+img_dump/*
+vid_dump/*
+
 # Vscode environment
 .vscode
 .git
