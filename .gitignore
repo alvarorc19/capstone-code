@@ -39,6 +39,11 @@
 build/*
 result/
 
+# Vscode environment
+.vscode
+.git
+.gitattributes
+
 # Outputs
 *.mp4
 *.gif
@@ -60,4 +65,7 @@ projects/*
 
 # Documentation generated
 docs/*
+
+# Python stuff
+__pycache__/
 

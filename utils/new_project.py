@@ -1,9 +1,18 @@
 from pathlib import Path
+import copy
+import numpy as np
 import toml
 import subprocess
 
 project_folder = "./projects"
-project_name = "demo2"
+project_name = "test"
+
+total_sweeps = 2 * 10
+recording_sweeps = 10
+L = 128
+dim = 2
+N = L**dim
+temp = 0.7
 
 def get_git_hash():
     git_hash = subprocess.check_output(
@@ -14,21 +23,21 @@ def get_git_hash():
 
 parameters = {
     "physical_settings" : {
-        "temperature" : 1,
-        "L":10,
-        "dimension" : 2,
+        "temperature" : temp,
+        "L":L,
+        "dimension" : dim,
         "J" : 1,
         "potts_q" : 3,
         "H" : 1.0,
-        "vec_H" : [0.0,1.0,2.0],
+        "vec_H" : [0.0,0.0,2.0],
     },
     "simulation_settings" : {
-        "time_steps" : 10000,
-        "recording_steps" : 1000,
+        "time_steps" : total_sweeps * N,
+        "recording_steps" : recording_sweeps,
         "record_magnetisation" : True,
         "record_energy" : True,
-        "record_susceptibility" : False,
-        "record_specific_heat" : False,
+        "record_susceptibility" : True,
+        "record_specific_heat" : True,
         "record_correlation_length" : False,
         "record_correlation_function" : False
     },
@@ -42,12 +51,17 @@ print("Base directory: ", base)
 seed_number = 0
 
 # Various temperatures
-temp_array = [2,3,4]
+temp_array = np.linspace(0.3,1.5, 20).tolist()
+# temp_array = []
 
 # Varius sizes
-length_array = [10,100,1000]
+# length_array = np.linspace(10, 1000, 20, dtype=int).tolist()
+length_array = []
 
-if temp_array and not length_array:
+global_parameters = copy.deepcopy(parameters)
+
+if (temp_array and not length_array):
+    global_parameters["physical_settings"]["temperature"] = temp_array
     for i,t in enumerate(temp_array):
         parameters["physical_settings"]["temperature"] = t
 
@@ -56,16 +70,19 @@ if temp_array and not length_array:
         with open(config_path/ "config.toml","w") as f:
             toml.dump(parameters, f)
 
-elif not temp_array and length_array:
-    for i,t in enumerate(temp_array):
-        parameters["physical_settings"]["temperature"] = t
+elif (not temp_array and length_array):
+    global_parameters["physical_settings"]["L"] =length_array
+    for i,l in enumerate(length_array):
+        parameters["physical_settings"]["L"] = l
 
         config_path = base / f"parameter-config-{i}"
         config_path.mkdir(exist_ok=True)
         with open(config_path/ "config.toml","w") as f:
             toml.dump(parameters, f)
 
-elif temp_array and length_array:
+elif (temp_array and length_array):
+    global_parameters["physical_settings"]["L"] =length_array
+    global_parameters["physical_settings"]["temperature"] = temp_array
     for i,t in enumerate(temp_array):
         for j, l in enumerate(length_array):
             parameters["physical_settings"]["temperature"] = t
@@ -82,3 +99,4 @@ else:
     with open(config_path / "config.toml", "w") as f:
         toml.dump(parameters, f)
 
+print("parameters: ",global_parameters)
