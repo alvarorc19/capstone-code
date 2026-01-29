@@ -94,7 +94,7 @@ class Model: public ModelBase{
          * @param[in] time 
          */
 
-        void write_lattice(HighFive::DataSet& lattice_set, int time) override;
+        void write_lattice(HighFive::DataSet* lattice_set, int time) override;
 
         // Virtual functions
         /**

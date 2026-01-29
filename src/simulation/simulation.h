@@ -51,7 +51,7 @@ class Simulation {
          * @brief Construct a new Simulation object
          * 
          */
-        Simulation() =default;
+        Simulation() = default;
 
         /**
          * @brief Parse the parameters from the toml file

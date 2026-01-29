@@ -148,17 +148,21 @@ void Simulation::initialise_writing() {
     props.add(HighFive::Chunking(chunk_dims));
 
     if (parameters.model_type == "xy") {
-        parameters.lattice_set = file->createDataSet<double>(
-            "lattice",
-            lattice_space,
-            props
+        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+            file->createDataSet<double>(
+                "lattice",
+                lattice_space,
+                props
+            )
         );
     }
     else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
-        parameters.lattice_set = file->createDataSet<int>(
-            "lattice",
-            lattice_space,
-            props
+        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+            file->createDataSet<int>(
+                "lattice",
+                lattice_space,
+                props
+            )
         );
     }
     else { 
@@ -217,7 +221,7 @@ void Simulation::update_observables() {
 }
 
 void Simulation::write_lattice(int time) {
-    model->write_lattice(parameters.lattice_set,time);
+    model->write_lattice(parameters.lattice_set.get(),time);
 }
 
 void Simulation::write_observables() {

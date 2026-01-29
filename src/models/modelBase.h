@@ -10,7 +10,7 @@ class ModelBase {
         virtual double compute_total_energy() = 0;
         virtual double compute_magnetisation() = 0;
         virtual double compute_energy_diff_flip() = 0;
-        virtual void write_lattice(HighFive::DataSet & lattice_set, int time) = 0;
+        virtual void write_lattice(HighFive::DataSet * lattice_set, int time) = 0;
 };
 
 #endif

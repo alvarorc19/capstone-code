@@ -29,7 +29,7 @@
 
 
 struct SimulationParameters {
-    HighFive::DataSet lattice_set;
+    std::unique_ptr<HighFive::DataSet> lattice_set;
     std::string model_type;
     std::filesystem::path project_folder_path;
     int L;
