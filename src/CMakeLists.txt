@@ -20,6 +20,7 @@ target_link_libraries(capstone_code
     OpenMP::OpenMP_CXX
     ${HDF5_CXX_LIBRARIES}
     tomlplusplus::tomlplusplus
+    stdc++fs
 )
 
 

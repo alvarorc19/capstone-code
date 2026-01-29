@@ -141,7 +141,7 @@ void Simulation::initialise_writing() {
     
     // Define chunks, how data is stored
     size_t chunk_rows = std::min(parameters.recording_steps, static_cast<size_t>(375));
-    std::vector<size_t> chunk_dims = {chunk_rows, N};
+    std::vector<hsize_t> chunk_dims = {chunk_rows, N};
 
     HighFive::DataSpace lattice_space(current_dims, max_dims);
     HighFive::DataSetCreateProps props;
