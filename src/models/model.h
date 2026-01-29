@@ -62,7 +62,7 @@ class Model: public ModelBase{
 
         /**
          * @brief Computes the heat capacity of the system
-         * @detail TODO include formula
+         * @details TODO include formula
          * 
          * @param energies array of energies
          * @return double 
@@ -71,7 +71,7 @@ class Model: public ModelBase{
 
         /**
          * @brief Computes the partition function for a single configuration of the system
-         * @detail TODO INCLUDE FORMULA
+         * @details TODO INCLUDE FORMULA
          * 
          * @return double 
          */
@@ -87,7 +87,7 @@ class Model: public ModelBase{
         
         /**
          * @brief Given a DataSet it writes the current time step lattice configuration to it
-         * @detail After opening hte h5 file and the dataset, this function is called to write the current
+         * @details After opening hte h5 file and the dataset, this function is called to write the current
          * lattice configuration to it at the correct time step index.
          * 
          * @param[out] lattice_set a HighFive dataset object where the object is to be built

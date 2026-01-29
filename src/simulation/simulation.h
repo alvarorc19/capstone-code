@@ -64,7 +64,7 @@ class Simulation {
         /**
          * @brief Selects the model to be used
          * 
-         * @detail Given a model parsed from the terminal it assigns the ModelBase pointer
+         * @details Given a model parsed from the terminal it assigns the ModelBase pointer
          * to the correpsondent model class to execute the simulation
          * 
          */
@@ -73,7 +73,7 @@ class Simulation {
         /**
          * @brief Initialises writing objects
          * 
-         * @detail Given the file pointer it creates the h5 file corresponding to that run.
+         * @details Given the file pointer it creates the h5 file corresponding to that run.
          * It also creates the lattice dataset and dataspace as well as reserving space and defining the chunk size
          * for later writing.
          * 
@@ -95,7 +95,7 @@ class Simulation {
         /**
          * @brief Executes a full sweep of Metropolis steps while recording observables
          * 
-         * @detail TODO: explain algorithm
+         * @details TODO: explain algorithm
          * 
          * @param time_step int current time step
          * @return int returns the updated time step after the sweep
@@ -108,7 +108,7 @@ class Simulation {
         /**
          * @brief  Writes the lattice in the dataset at a given time step
          * 
-         * @detail It resizes the dataset to accomodate the new time step and writes the lattice into the dataset
+         * @details It resizes the dataset to accomodate the new time step and writes the lattice into the dataset
          * stored in the SimulationParameters struct.
          * 
          * @param time int time step
