@@ -22,8 +22,8 @@ int main(int argc, char *argv[]){
     std::string project_folder;
     std::string running_model;
     // Has the output and error to txt files
-    (void)std::freopen("output.txt", "w", stdout);
-    (void)std::freopen("error.txt", "w", stderr);
+    // (void)std::freopen("output.txt", "w", stdout);
+    // (void)std::freopen("error.txt", "w", stderr);
     int num_threads = 4;
 
         for (int i = 1; i < argc; ++i) {
@@ -57,8 +57,8 @@ int main(int argc, char *argv[]){
 
         // Separate this for easier parallelisation implementation
         // Iterate over the different directories
+        int i = 1;
         for (auto const& dir_entry : std::filesystem::directory_iterator{project_path}){ 
-            int i = 1;
             if (dir_entry.is_directory()) {
                 std::cout <<"Path of combination "<< i << ": " << dir_entry.path().filename() << '\n';
                 directories.push_back(dir_entry.path());
@@ -74,11 +74,15 @@ int main(int argc, char *argv[]){
             std::cout << "Starting parameter combination number " << i +1 << " out of " <<
                 directories.size() << "\n";
             }
-            std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
-            sim->parse_parameters(directories[i], running_model);
-            // Initialise in critical since multithreading messes up writing
-            #pragma omp critical(hdf5_init)
+            #pragma omp critical
             {
+            std::cout <<"started simlation pointer class" << std::endl;
+            }
+            std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
+            // Initialise in critical since multithreading messes up parsing and writing
+            #pragma omp critical(simulation_setup)
+            {
+                sim->parse_parameters(directories[i], running_model);
                 sim->initialise_writing();
             }
             sim->run();

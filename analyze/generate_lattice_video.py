@@ -62,7 +62,7 @@ def main(project_name: str, parameter_combination: int):
         print(f"Time = {frame}")
         im.set_array(generate_lattice(frame, import_lattice(project_path,frame), config))
         return [im]
-    ani = FuncAnimation(fig, update, frames = 3000, interval = 700, blit = True)
+    ani = FuncAnimation(fig, update, frames = 10, interval = 1, blit = True)
     html = ani.to_jshtml()
     # with open("analyze/vid_dump/temperature50.html", "w") as f:
     #     f.write(html)
@@ -73,8 +73,8 @@ def main(project_name: str, parameter_combination: int):
 
 if __name__ == "__main__":
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "temperature30_0-3_1-5_l100_dim2_long"
-    parameter_combination = 0
+    project_name = "test"
+    parameter_combination = 10
     main(project_name, parameter_combination)
     # for i in range(30):
     #     main(project_name, i)

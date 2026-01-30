@@ -43,6 +43,9 @@ result/
 img_dump/*
 vid_dump/*
 
+# Input
+utils/new_project.py
+
 # Vscode environment
 .vscode
 .git

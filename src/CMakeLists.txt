@@ -16,7 +16,7 @@ target_include_directories(capstone_code PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(capstone_code
     PUBLIC
-    HighFive
+    # HighFive
     OpenMP::OpenMP_CXX
     ${HDF5_CXX_LIBRARIES}
     tomlplusplus::tomlplusplus
