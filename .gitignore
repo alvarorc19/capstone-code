@@ -40,8 +40,10 @@ build/*
 result/
 
 # Output
-img_dump/*
-vid_dump/*
+analyze/img_dump/*
+analyze/vid_dump/*
+!analyze/img_dump
+!analyze/vid_dump
 
 # Input
 utils/new_project.py
