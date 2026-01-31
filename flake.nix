@@ -21,7 +21,8 @@
         devShells.default = pkgs.mkShell {
           name = "c++ with pixi";
           nativeBuildInputs = with pkgs; [
-            clang_20
+            # clang_20
+            gcc_multi
           ];
           buildInputs = with pkgs; [
             ffmpeg # for video generation
@@ -39,7 +40,7 @@
             cmake
             graphviz
             pixi
-            llvmPackages_20.openmp
+            # llvmPackages_20.openmp
           ];
           shellHook = ''
             echo "pixi shell and c++ environment initialised"

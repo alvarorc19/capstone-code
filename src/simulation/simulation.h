@@ -93,17 +93,22 @@ class Simulation {
         void do_metropolis_step();
 
         /**
+         * @brief executes a sweep of the lattice
+         * 
+         */
+        void do_metropolis_sweep();
+
+        /**
          * @brief Executes a full sweep of Metropolis steps while recording observables
          * 
          * @details TODO: explain algorithm
-         * 
-         * @param time_step int current time step
-         * @return int returns the updated time step after the sweep
          */
-        int do_metropolis_recording_sweep(int time_step);
+        void do_metropolis_recording_sweep();
 
         //TODO
-        // void do_cluster_step();
+        void do_cluster_step();
+        void do_cluster_sweep();
+        void do_cluster_recording_sweep();
 
         /**
          * @brief  Writes the lattice in the dataset at a given time step

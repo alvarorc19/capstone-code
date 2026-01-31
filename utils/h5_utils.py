@@ -17,3 +17,9 @@ def import_lattice(directory: pathlib.Path, time_step: int) -> pd.DataFrame:
     lattice = pd.DataFrame(f["lattice"][time_step])
     f.close()
     return lattice
+
+def import_lattice_size(directory: pathlib.Path) -> int:
+    f = h5py.File(directory / "results.h5", "r")
+    size = f["lattice"].shape[0]
+    f.close()
+    return size

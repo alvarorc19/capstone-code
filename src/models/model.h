@@ -132,6 +132,10 @@ class Model: public ModelBase{
          * @param indices array of indices where the spins are to be changed
          */
         virtual void change_spin_randomly(ivec indices) = 0;
+    // TODO implement this
+        void change_spin(int index, double spin) override {}
+
+        void cluster_flip_neighbours(int index, double direction, int& new_spins_flipped, double angle_flip) override{}
 
 };
 
