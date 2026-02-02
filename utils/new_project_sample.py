@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import toml
 import subprocess
+import json
 
 project_folder = "./projects"
 project_name = "test"
@@ -97,3 +98,5 @@ else:
         toml.dump(parameters, f)
 
 print("parameters: ",global_parameters)
+with open(base / "global_parameters.json", "w") as f:
+    json.dump(global_parameters, f, indent = 4)
