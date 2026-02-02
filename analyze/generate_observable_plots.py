@@ -23,7 +23,8 @@ def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
     project_name = "temperature30_0-3_1-5_l100_dim2_long"
     # parameter_combination = 2
-    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     project_path = project_root / project_name
     # config = toml.load(project_path / "config.toml")
     observables = ["magnetisation", "energy", "specific_heat", "susceptibility"]

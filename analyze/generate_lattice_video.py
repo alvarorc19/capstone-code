@@ -40,7 +40,8 @@ def generate_lattice(time_step:int, df:pd.DataFrame, config:dict) -> np.array:
     return full_dim_grid
 
 def main(project_name: str, parameter_combination: int):
-    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects") 
     project_path = project_root/ project_name / f"parameter-config-{parameter_combination}"
     config = toml.load(project_path / "config.toml")
 
