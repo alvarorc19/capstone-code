@@ -144,6 +144,10 @@ void Simulation::run() {
                 do_cluster_sweep();
                 update_observables();
                 time_step++;
+
+                if (spins_flipped > 1000 * parameters.N){
+                    break;
+                }
                 // #pragma omp critical
                 // {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
@@ -282,6 +286,7 @@ void Simulation::do_cluster_step(){
     double angle_flip = rng::random_angle(rng::engine);
     model->change_spin(random_index, angle_flip);
     ivec cluster_stack{random_index};
+    spins_flipped++;
 
     while(!cluster_stack.empty()){
         int current_index = cluster_stack.back();
@@ -290,6 +295,7 @@ void Simulation::do_cluster_step(){
         
         for (int neigh_index: flipped_neigh) {
             cluster_stack.push_back(neigh_index);
+            spins_flipped++;
         }
     } 
 }
