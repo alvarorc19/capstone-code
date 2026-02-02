@@ -42,8 +42,10 @@ result/
 # Output
 analyze/img_dump/*
 analyze/vid_dump/*
+analyze/critical_exponents/*
 !analyze/img_dump
 !analyze/vid_dump
+!analyze/critical_exponents
 
 # Input
 utils/new_project.py

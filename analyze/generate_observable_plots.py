@@ -9,109 +9,44 @@ import toml
 import numpy as np
 import matplotlib.pyplot as plt
 from observables_plots import (
-        magnetisation_plot,
-        energy_plot,
-        susceptibility_plot,
-        specific_heat_plot,
-        binder_cumulant_plot,
-    )
+    do_observable_plot,
+)
+
+from generate_critical_exponents import (
+    generate_critical_exponents_file,
+)
+
+plt.rcParams['text.usetex'] = True
+plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
     project_name = "temperature30_0-3_1-5_l100_dim2_long"
     # parameter_combination = 2
-    project_path = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") / project_name / "parameter-config-0"
-    config = toml.load(project_path / "config.toml")
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    project_path = project_root / project_name
+    # config = toml.load(project_path / "config.toml")
+    observables = ["magnetisation", "energy", "specific_heat", "susceptibility"]
+    observables_titles = [r"Magnetisation $\langle |m| \rangle$", r"Energy $\langle E \rangle$", "Specific Heat $C_H$", r"Magnetic Susceptibility $\chi$"]
 
-    do_all_plots(project_path.parent, config, project_name)
+    # Create plots
+    for observable, observables_title in zip(observables, observables_titles):
+        do_observable_plot(
+            observable = observable,
+            observable_title = observables_title,
+            directory = project_path, 
+            x_data = "temperature",
+            log_plot = False,
+            log_fit = False,
+            linear_fit = False,
+        )
 
-def do_all_plots(directory:pathlib.Path, config:dict, project_name:str):
-    saving_path = directory.parent.parent / "analyze" / "img_dump"
-    print("saving_path", saving_path)
-    sim_settings = config["simulation_settings"]
-    
-    x_axis = "temperature"
+    # Critical exponents
+    saving_path = project_path.parent.parent / "analyze" / "critical_exponents"
 
-    # Magnetisation plot
-    fig, ax = plt.subplots(
-        nrows = 1,
-        ncols = 1,
-        sharey = all,
-        # figsize=(15,6),
-    )
-    ax = magnetisation_plot(directory, ax, x_axis)
-
-    ax.set_title("<m> vs T")
-
-    ax.set_ylabel("<m>")
-    ax.set_xlabel("T")
-
-    fig.savefig(saving_path / f"{project_name}_magnetisation.pdf")
-
-    # Energy plot
-    fig, ax = plt.subplots(
-        nrows = 1,
-        ncols = 1,
-        sharey = all,
-        # figsize=(15,6),
-    )
-    ax = energy_plot(directory, ax, x_axis)
-
-    ax.set_title("<E> vs T")
-
-    ax.set_ylabel("<E>")
-    ax.set_xlabel("T")
-
-    fig.savefig(saving_path / f"{project_name}_energy.pdf")
-    # Susceptibility plot
-    fig, ax = plt.subplots(
-        nrows = 1,
-        ncols = 1,
-        sharey = all,
-        # figsize=(15,6),
-    )
-    ax = susceptibility_plot(directory, ax,x_axis)
-
-    ax.set_title("X vs T")
-
-    ax.set_ylabel("X")
-    ax.set_xlabel("T")
-
-    fig.savefig(saving_path / f"{project_name}_susceptibility.pdf")
-    # specific heat plot
-    fig, ax = plt.subplots(
-        nrows = 1,
-        ncols = 1,
-        sharey = all,
-        # figsize=(15,6),
-    )
-    ax = specific_heat_plot(directory, ax, x_axis)
-
-    ax.set_title("c_v vs t")
-
-    ax.set_ylabel("c_v")
-    ax.set_xlabel("t")
-
-    fig.savefig(saving_path / f"{project_name}_specific_heat.pdf")
-
-    # Binder cumulant plot
-    fig, ax = plt.subplots(
-        nrows = 1,
-        ncols = 1,
-        sharey = all,
-        # figsize=(15,6),
-    )
-    ax = binder_cumulant_plot(directory, ax, x_axis)
-
-    ax.set_title("Binder cumulant vs T")
-
-    ax.set_ylabel("U_infty")
-    ax.set_xlabel("T")
-
-    fig.savefig(saving_path / f"{project_name}_binder_cumulant.pdf")
-
-
-
+    saving_path.mkdir(parents = True, exist_ok = True)
+    critical_temp = 0.89
+    generate_critical_exponents_file(project_path, saving_path, critical_temp)
 
 if __name__=="__main__":
     main()

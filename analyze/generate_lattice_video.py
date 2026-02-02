@@ -40,7 +40,8 @@ def generate_lattice(time_step:int, df:pd.DataFrame, config:dict) -> np.array:
     return full_dim_grid
 
 def main(project_name: str, parameter_combination: int):
-    project_path = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") / project_name / f"parameter-config-{parameter_combination}"
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    project_path = project_root/ project_name / f"parameter-config-{parameter_combination}"
     config = toml.load(project_path / "config.toml")
 
     fig, ax = plt.subplots()
@@ -69,7 +70,7 @@ def main(project_name: str, parameter_combination: int):
         im.set_array(generate_lattice(frame, import_lattice(project_path,frame), config))
         return [im]
     ani = FuncAnimation(fig, update, frames = lattice_size, interval = frames_ps, blit = True)
-    html = ani.to_jshtml()
+    # html = ani.to_jshtml()
     # with open("analyze/vid_dump/temperature50.html", "w") as f:
     #     f.write(html)
     save_path = project_path.parent.parent.parent / "analyze" / "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
