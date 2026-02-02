@@ -135,7 +135,7 @@ class Model: public ModelBase{
     // TODO implement this
         void change_spin(int index, double spin) override {}
 
-        void cluster_flip_neighbours(int index, double direction, int& new_spins_flipped, double angle_flip) override{}
+        ivec cluster_flip_neighbours(int index, double direction, double angle_flip) override{ivec a;return a;}
 
 };
 

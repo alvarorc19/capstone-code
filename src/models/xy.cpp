@@ -96,20 +96,22 @@ double XYModel::compute_energy_diff_flip(){
 * $$
 * For $\mathbf{r} = (\cos\phi, \sin\phi)$ and $\mathbf{s}_i = (\cos\theta_i, \sin\theta_i)$.
 */
-void XYModel::cluster_flip_neighbours(int index, double direction, int& new_spins_flipped, double angle_flip) {
+ivec XYModel::cluster_flip_neighbours(int index, double direction, double angle_flip) {
     ivec neigh_indices = lattice_obj->get_neighbours_indices(index);
+    ivec flip_neigh{};
 
     // Given neighbours adds them depending on probability
-    for (auto & neigh_index: neigh_indices) {
+    for (int & neigh_index: neigh_indices) {
         double index_value = lattice_obj->get_lattice_site(index);
         double neigh_value = lattice_obj->get_lattice_site(neigh_index);
         double probability = 1 - exp(std::min(0., 2 * beta * J * std::cos(direction - index_value) * std::cos(direction - neigh_value)));
         double r = rng::random_real_number(rng::engine);
         if (r < probability) {
             change_spin(neigh_index, angle_flip);
-            new_spins_flipped++;
+            flip_neigh.push_back(neigh_index);
         }
     }
+    return flip_neigh;
 }
 
 void XYModel::change_spin_randomly(ivec indices) {

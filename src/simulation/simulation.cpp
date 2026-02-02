@@ -102,39 +102,40 @@ void Simulation::run() {
         {
             std::cout << "step " << i << " out of " << parameters.recording_sweeps << "\n";
         }
-    if (parameters.record_lattice) {
-        for(int i = 0; i < parameters.recording_sweeps; i++){
-            // do_metropolis_recording_sweep();
-            // time_step++;
-            // write_lattice(i);
+        if (parameters.record_lattice) {
+            for(int i = 0; i < parameters.recording_sweeps * parameters.N; i++){
+                // do_metropolis_recording_sweep();
+                // time_step++;
+                // write_lattice(i);
 
-            // Recording sweep records every step instead of every sweep (MCS)
-            // do_cluster_recording_sweep();
-            do_cluster_sweep();
-            update_observables();
-            write_lattice(i);
-            time_step++;
-            // #pragma omp critical
-            // {
-            // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-            // }
+                // Recording sweep records every step instead of every sweep (MCS)
+                // do_cluster_recording_sweep();
+                do_cluster_step();
+                update_observables();
+                write_lattice(i);
+                time_step++;
+                // #pragma omp critical
+                // {
+                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+                // }
+            }
         }
-    }
-    else if (not parameters.record_lattice) {
-        for(int i = 0; i < parameters.recording_sweeps; i++){
-            // do_metropolis_recording_sweep();
-            
-            // Recording sweep records every step instead of every sweep (MCS)
-            // do_cluster_recording_sweep();
-            do_cluster_sweep();
-            update_observables();
-            time_step++;
-            // #pragma omp critical
-            // {
-            // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-            // }
-        }
+        else if (not parameters.record_lattice) {
+            for(int i = 0; i < parameters.recording_sweeps; i++){
+                // do_metropolis_recording_sweep();
+                
+                // Recording sweep records every step instead of every sweep (MCS)
+                // do_cluster_recording_sweep();
+                do_cluster_sweep();
+                update_observables();
+                time_step++;
+                // #pragma omp critical
+                // {
+                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+                // }
+            }
 
+        }
     }
     write_observables();
     file->flush();
@@ -143,7 +144,7 @@ void Simulation::run() {
         std::cout << "Finished run for " << parameters.project_folder_path.filename() << "\n";
     }
 }
-}
+
 
 void Simulation::initialise_model() {
     if (parameters.model_type == "ising"){
@@ -264,16 +265,18 @@ void Simulation::do_cluster_step(){
     int random_index = rng::random_int_number(rng::engine, 0, parameters.N);
     double angle_r = rng::random_angle(rng::engine);
     double angle_flip = rng::random_angle(rng::engine);
-    int spins_flipped = 0;
-    int new_spins_flipped = 1;
     model->change_spin(random_index, angle_flip);
+    ivec cluster_stack{random_index};
 
-    do {
-        spins_flipped = new_spins_flipped;
-        model->cluster_flip_neighbours(random_index, angle_r, new_spins_flipped, angle_flip);
-    } while (spins_flipped < new_spins_flipped);
-    
-   // return spins_flipped; 
+    while(!cluster_stack.empty()){
+        int current_index = cluster_stack.back();
+        cluster_stack.pop_back();
+        ivec flipped_neigh = model->cluster_flip_neighbours(current_index, angle_r,angle_flip);
+        
+        for (int neigh_index: flipped_neigh) {
+            cluster_stack.push_back(neigh_index);
+        }
+    } 
 }
 
 

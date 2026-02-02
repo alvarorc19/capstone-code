@@ -26,7 +26,7 @@ class XYModel : public Model<double> {
         double compute_spin_magnetic_term() override {return 0;};
         double compute_total_energy() override;
         double compute_magnetisation() override;
-        void cluster_flip_neighbours(int index, double direction, int& new_spins_flipped, double angle_flip) override;
+        ivec cluster_flip_neighbours(int index, double direction, double angle_flip) override;
         void change_spin_randomly(ivec indices) override;
     // TODO make it general
         void change_spin(int index, double spin) override;
