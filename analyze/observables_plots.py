@@ -13,13 +13,16 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 from compute_observables import (
-        compute_average_magnetisation,
-        compute_average_energy,
-        compute_susceptibility,
-        compute_specific_heat,
-        compute_binder_cumulant,
-    )
-from utils.h5_utils import import_observable
+    compute_average_magnetisation,
+    compute_average_energy,
+    compute_susceptibility,
+    compute_specific_heat,
+    compute_binder_cumulant,
+)
+from utils.h5_utils import (
+    import_observable,
+    import_physical_parameter,
+)
 
 
 def _find_observable_function(observable:str):
@@ -53,7 +56,7 @@ def do_observable_plot(
         config = toml.load(direc / "config.toml")
         print("direc", direc)
         x_array = np.append(x_array, import_physical_parameter(direc, x_data))
-        observable_array = np.append(observable_array, compute_observable(direc, config))
+        observable_array = np.append(observable_array, compute_observable(direc))
 
     fig, ax = plt.subplots(
         ncols=1,

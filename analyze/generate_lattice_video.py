@@ -45,7 +45,7 @@ def main(project_name: str, parameter_combination: int):
     config = toml.load(project_path / "config.toml")
 
     fig, ax = plt.subplots()
-    ax.set_title(f"XY Model with J = 1 and T = {config["physical_settings"]["temperature"]:.2f}")
+    ax.set_title(f"XY Model with J = 1 and T = {config['physical_settings']['temperature']:.2f}")
     # # Good cmap for the wrapping of angles
     # im = ax.imshow(generate_lattice(0, import_lattice(project_path,-1), config), cmap="twilight_shifted", vmin = 0, vmax = 2*np.pi)
 
