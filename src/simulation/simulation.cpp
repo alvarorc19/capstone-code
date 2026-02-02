@@ -277,7 +277,7 @@ void Simulation::do_metropolis_recording_sweep() {
 * Total MCS = {\sum (size of each cluster)} / number particles
 */
 void Simulation::do_cluster_step(){
-    int random_index = rng::random_int_number(rng::engine, 0, parameters.N);
+    int random_index = rng::random_int_number(rng::engine, 0, parameters.N-1);
     double angle_r = rng::random_angle(rng::engine);
     double angle_flip = rng::random_angle(rng::engine);
     model->change_spin(random_index, angle_flip);
