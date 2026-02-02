@@ -42,6 +42,7 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
 
     // Assign all the parameters to the struct
     parameters.project_folder_path = project_folder_path;
+    parameters.dim = static_cast<int>(tbl["physical_settings"]["dimension"].value_or<int64_t>(0));
     parameters.L = static_cast<int>(tbl["physical_settings"]["L"].value_or<int64_t>(0));
     parameters.N = std::pow(parameters.L, parameters.dim);
     parameters.T = tbl["physical_settings"]["temperature"].value_or<double>(0.0);
@@ -94,12 +95,12 @@ void Simulation::run() {
         std::cout << "Finished thermalisation, starting writing" << "\n";
     }
 
-    for(int i = 0; i < parameters.recording_steps; i++){
-        time_step = do_metropolis_recording_sweep(time_step);
-        write_lattice(i);
+    for(int i = 0; i < parameters.recording_sweeps; i++){
+        //time_step = do_metropolis_recording_sweep(time_step);
+        //write_lattice(i);
         #pragma omp critical
         {
-            std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+            std::cout << "step " << i << " out of " << parameters.recording_sweeps << "\n";
         }
     if (parameters.record_lattice) {
         for(int i = 0; i < parameters.recording_sweeps; i++){
@@ -142,6 +143,7 @@ void Simulation::run() {
         std::cout << "Finished run for " << parameters.project_folder_path.filename() << "\n";
     }
 }
+}
 
 void Simulation::initialise_model() {
     if (parameters.model_type == "ising"){
@@ -183,6 +185,8 @@ void Simulation::initialise_writing() {
     std::filesystem::path filename = parameters.project_folder_path / std::filesystem::path("results.h5");
     this->file = std::make_unique<HighFive::File>(filename.string(), HighFive::File::Truncate);
 
+    if (parameters.record_lattice){
+
     std::vector<size_t> current_dims = {0, parameters.N}; 
     std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, parameters.N}; 
     
@@ -214,6 +218,7 @@ void Simulation::initialise_writing() {
     }
     else { 
         throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
+    }
     }
     
     // Beware with the space reserved

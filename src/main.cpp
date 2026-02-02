@@ -74,10 +74,6 @@ int main(int argc, char *argv[]){
             std::cout << "Starting parameter combination number " << i +1 << " out of " <<
                 directories.size() << std::endl;
             }
-            #pragma omp critical
-            {
-            std::cout <<"started simlation pointer class" << std::endl;
-            }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             // Initialise in critical since multithreading messes up parsing and writing
             #pragma omp critical
