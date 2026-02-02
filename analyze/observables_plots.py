@@ -94,7 +94,7 @@ def do_observable_plot(
 
 
     saving_path.mkdir(parents = True, exist_ok = True)
-    fig.savefig(saving_path / f"{directory.name}_magnetisation.pdf")
+    fig.savefig(saving_path / f"{directory.name}_{observable}.pdf")
 
 
 def _generate_scatter_plot(

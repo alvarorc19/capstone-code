@@ -44,8 +44,8 @@ def generate_critical_exponents_file(directory:pathlib.Path, saving_path:pathlib
         f.write(f"J = {global_config['physical_settings']['J']}\n\n")
 
 
-        f.write(f"Total sweeps = {global_config["simulation_settings"]["total_sweeps"]}")
-        f.write(f"Recording sweeps = {global_config["simulation_settings"]["recording_sweeps"]}")
+        # f.write(f"Total sweeps = {global_config['simulation_settings']['total_sweeps']}")
+        # f.write(f"Recording sweeps = {global_config['simulation_settings']['recording_sweeps']}")
         f.write(f"Git hash = {global_config['git_hash']}\n")
         f.write(f"Seed = {global_config['seed']}\n")
 
