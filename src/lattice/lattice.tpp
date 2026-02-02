@@ -17,7 +17,7 @@ int Lattice<T>::get_1d_index(ivec indices) {
 
     int index = 0;
 
-    for (int i; i < lattice_dim; i++) {
+    for (int i = 0; i < lattice_dim; i++) {
         assert((indices[i] < lattice_length) && "Indices must be in the lattice");
         index += indices[i] * std::pow(lattice_length, lattice_dim - i - 1);
     }

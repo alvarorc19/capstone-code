@@ -66,21 +66,18 @@ int main(int argc, char *argv[]){
             }
         }
         std::cout << "Number of parameters = " << directories.size() << std::endl;
-        #pragma omp parallel for schedule(dynamic)
+        /* #pragma omp parallel for schedule(dynamic) */
+        #pragma omp parallel for
         for (int i = 0; i < directories.size(); i++){
             // out commands need to be wrapped around this
             #pragma omp critical
             {
             std::cout << "Starting parameter combination number " << i +1 << " out of " <<
-                directories.size() << "\n";
-            }
-            #pragma omp critical
-            {
-            std::cout <<"started simlation pointer class" << std::endl;
+                directories.size() << std::endl;
             }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             // Initialise in critical since multithreading messes up parsing and writing
-            #pragma omp critical(simulation_setup)
+            #pragma omp critical
             {
                 sim->parse_parameters(directories[i], running_model);
                 sim->initialise_writing();
@@ -92,6 +89,7 @@ int main(int argc, char *argv[]){
             std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size()<< std::endl;
             }
         }
+        std::cout << "\n" << "Ended the simulation!" << std::endl;
         return 0;
     }
     catch (const std::invalid_argument& e) {

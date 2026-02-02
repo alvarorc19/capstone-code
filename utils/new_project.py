@@ -5,10 +5,10 @@ import toml
 import subprocess
 
 project_folder = "./projects"
-project_name = "test"
+project_name = "temp20_l128_dim2_10-4sweeps"
 
-total_sweeps = 2 * 10
-recording_sweeps = 10
+total_sweeps = 1000
+recording_sweeps = 300
 L = 128
 dim = 2
 N = L**dim

@@ -38,6 +38,8 @@
 *.app
 build/*
 result/
+tmp.sh
+hpc_run.sh
 
 # Output
 img_dump/*

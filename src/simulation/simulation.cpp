@@ -74,18 +74,18 @@ void Simulation::run() {
         //     std::cout << "Thermalisation step temp = " << parameters.T <<" = " << i <<"\n";
         // }
     }
-    // #pragma omp critical
-    // {
-    // std::cout << "Finished thermalisation, starting writing" << "\n";
-    // }
+    #pragma omp critical
+    {
+        std::cout << "Finished thermalisation, starting writing" << "\n";
+    }
 
     for(int i = 0; i < parameters.recording_steps; i++){
         time_step = do_metropolis_recording_sweep(time_step);
         write_lattice(i);
-        // #pragma omp critical
-        // {
-        // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-        // }
+        #pragma omp critical
+        {
+            std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+        }
     }
     write_observables();
     file->flush();
