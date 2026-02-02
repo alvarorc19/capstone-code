@@ -91,3 +91,32 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
     return neighbours_array;
 }
 
+
+template <typename T>
+std::vector<int> Lattice<T>::get_neighbours_indices(ivec indices) {
+    int index = get_1d_index(indices);
+    int neigh_index;
+    ivec neigh_index_array;
+    neigh_index_array.reserve(2*lattice_dim);
+
+    for (int i = 0; i < 2 * lattice_dim; i++) {
+        neigh_index = neighbours_table[(2 * lattice_dim) * index + i];
+        neigh_index_array.emplace_back(neigh_index);
+    }
+
+    return neigh_index_array;
+}
+
+template <typename T>
+std::vector<int> Lattice<T>::get_neighbours_indices(int index){
+    int neigh_index;
+    ivec neigh_index_array;
+    neigh_index_array.reserve(2*lattice_dim);
+
+    for (int i = 0; i < 2 * lattice_dim; i++) {
+        neigh_index = neighbours_table[(2 * lattice_dim) * index + i];
+        neigh_index_array.emplace_back(neigh_index);
+    }
+
+    return neigh_index_array;
+}

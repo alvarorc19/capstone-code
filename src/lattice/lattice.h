@@ -38,6 +38,7 @@ class Lattice {
 
         // Constructor
         Lattice(int L, int dim): lattice_dim(dim), lattice_length(L), particle_num(std::pow(L, dim)) {} // Done
+
         // Getters
         int get_1d_index(ivec indices);
         //TODO is this redundant??
@@ -47,6 +48,8 @@ class Lattice {
         int get_particle_num() { return particle_num;}
         const std::vector<T>& get_lattice() const {return lattice;}
         std::vector<T>& get_lattice(){return lattice;}
+        std::vector<int> get_neighbours_indices(ivec indices);
+        std::vector<int> get_neighbours_indices(int index);
 
         //Type specific
         virtual T& get_lattice_site(ivec indices) = 0;

@@ -42,8 +42,12 @@ tmp.sh
 hpc_run.sh
 
 # Output
-img_dump/*
-vid_dump/*
+analyze/img_dump/*
+analyze/vid_dump/*
+analyze/critical_exponents/*
+!analyze/img_dump
+!analyze/vid_dump
+!analyze/critical_exponents
 
 # Input
 utils/new_project.py
@@ -61,6 +65,8 @@ analyze/*.html
 analyze/*.mp4
 analyze/*.gif
 projects/*
+*.png
+*.pdf
 !projects/demo/config.toml
 
 # debug information files
@@ -74,6 +80,7 @@ projects/*
 
 # Documentation generated
 docs/*
+!docs
 
 # Python stuff
 __pycache__/

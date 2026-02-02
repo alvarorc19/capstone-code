@@ -16,7 +16,10 @@ import pandas as pd
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
 import toml
-from utils.h5_utils import import_lattice
+from utils.h5_utils import (
+    import_lattice,
+    import_lattice_size,
+)
 
 
 def generate_ising_grid(time_step:int, df:pd.DataFrame)->np.array:
@@ -37,16 +40,18 @@ def generate_lattice(time_step:int, df:pd.DataFrame, config:dict) -> np.array:
     return full_dim_grid
 
 def main(project_name: str, parameter_combination: int):
-    project_path = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") / project_name / f"parameter-config-{parameter_combination}"
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    project_path = project_root/ project_name / f"parameter-config-{parameter_combination}"
     config = toml.load(project_path / "config.toml")
 
     fig, ax = plt.subplots()
-    ax.set_title(f"XY Model with J = 1, H = (0,1) and T = {config["physical_settings"]["temperature"]:.2f}")
+    ax.set_title(f"XY Model with J = 1 and T = {config["physical_settings"]["temperature"]:.2f}")
     # # Good cmap for the wrapping of angles
     # im = ax.imshow(generate_lattice(0, import_lattice(project_path,-1), config), cmap="twilight_shifted", vmin = 0, vmax = 2*np.pi)
 
+    lattice_size = import_lattice_size(project_path)
     # Good cmap for visualising vortices
-    im = ax.imshow(generate_lattice(0, import_lattice(project_path,0), config), cmap="hsv", vmin = 0, vmax = 2*np.pi)
+    im = ax.imshow(generate_lattice(0, import_lattice(project_path,0), config), cmap="hsv", vmin = 0, vmax = 2*np.pi, interpolation='lanczos')
 
     # Add colorbar
     cbar = fig.colorbar(im, ax=ax, label='Spin Angle (radians)') 
@@ -57,24 +62,26 @@ def main(project_name: str, parameter_combination: int):
     # stride = 100
     # frame_indices = range(0, 10000, stride)
 
+    frames_ps = 10
+
     def update(frame):
         # actual_frame = frame_indices[frame]
         print(f"Time = {frame}")
         im.set_array(generate_lattice(frame, import_lattice(project_path,frame), config))
         return [im]
-    ani = FuncAnimation(fig, update, frames = 10, interval = 1, blit = True)
-    html = ani.to_jshtml()
+    ani = FuncAnimation(fig, update, frames = lattice_size, interval = frames_ps, blit = True)
+    # html = ani.to_jshtml()
     # with open("analyze/vid_dump/temperature50.html", "w") as f:
     #     f.write(html)
     save_path = project_path.parent.parent.parent / "analyze" / "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
     print("save path", save_path)
-    ani.save(save_path, writer = "ffmpeg", fps = 10)
+    ani.save(save_path, writer = "ffmpeg", fps =frames_ps)
 
 
 if __name__ == "__main__":
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "test"
-    parameter_combination = 10
+    project_name = "cluster_test_l128"
+    parameter_combination = 0
     main(project_name, parameter_combination)
     # for i in range(30):
     #     main(project_name, i)

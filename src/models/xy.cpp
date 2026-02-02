@@ -60,8 +60,8 @@ double XYModel::compute_total_energy(){
 
     energy +=- J * (neigh_energy / 2);
 
-    // Magnetic term
-    energy+= - vec_H[0] * compute_spin_magnetic_term(0) - vec_H[1] * compute_spin_magnetic_term(1);
+    // // Magnetic term
+    // energy+= - vec_H[0] * compute_spin_magnetic_term(0) - vec_H[1] * compute_spin_magnetic_term(1);
     return energy;
 }
 //Magnetisation here will be taken as the modulus
@@ -79,12 +79,37 @@ double XYModel::compute_energy_diff_flip(){
     double energy_diff=0;
     ivec random_indices = rng::random_int_array(rng::engine, lattice_obj->get_lattice_dim(), 0, lattice_obj->get_lattice_length() - 1);
     double angle = lattice_obj->get_lattice_site(random_indices);
-    energy_diff += J * compute_spin_neighbours_term(random_indices) + vec_H[0]*std::cos(angle) + vec_H[1]*std::sin(angle);
+    energy_diff += J * compute_spin_neighbours_term(random_indices);
+
     change_spin_randomly(random_indices);
     angle = lattice_obj->get_lattice_site(random_indices);
-    energy_diff -= J * compute_spin_neighbours_term(random_indices) + vec_H[0]*std::cos(angle) + vec_H[1]*std::sin(angle);
+    energy_diff -= J * compute_spin_neighbours_term(random_indices);
 
     return energy_diff;
+}
+
+/**
+* @brief Adds a spin to the cluster
+* 
+* @details $$
+* P (s_i, s_j) = 1- \exp(\min\{0, \, 2\beta \cos(\phi - \theta_i) \cos(\phi - \theta_j)\})
+* $$
+* For $\mathbf{r} = (\cos\phi, \sin\phi)$ and $\mathbf{s}_i = (\cos\theta_i, \sin\theta_i)$.
+*/
+void XYModel::cluster_flip_neighbours(int index, double direction, int& new_spins_flipped, double angle_flip) {
+    ivec neigh_indices = lattice_obj->get_neighbours_indices(index);
+
+    // Given neighbours adds them depending on probability
+    for (auto & neigh_index: neigh_indices) {
+        double index_value = lattice_obj->get_lattice_site(index);
+        double neigh_value = lattice_obj->get_lattice_site(neigh_index);
+        double probability = 1 - exp(std::min(0., 2 * beta * J * std::cos(direction - index_value) * std::cos(direction - neigh_value)));
+        double r = rng::random_real_number(rng::engine);
+        if (r < probability) {
+            change_spin(neigh_index, angle_flip);
+            new_spins_flipped++;
+        }
+    }
 }
 
 void XYModel::change_spin_randomly(ivec indices) {
@@ -92,4 +117,10 @@ void XYModel::change_spin_randomly(ivec indices) {
     dvec & lattice = lattice_obj->get_lattice();
     old_lattice = lattice;
     lattice[index] = rng::random_angle(rng::engine);
+}
+
+void XYModel::change_spin(int index, double spin){
+    dvec & lattice = lattice_obj->get_lattice();
+    old_lattice = lattice;
+    lattice[index] = spin;
 }

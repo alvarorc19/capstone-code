@@ -34,6 +34,7 @@ struct SimulationParameters {
     std::filesystem::path project_folder_path;
     int L;
     int dim;
+    size_t N;
     double T;
     double beta;
     double J;
@@ -42,11 +43,9 @@ struct SimulationParameters {
     double H;
     std::vector<double> vec_H;
     // Always records the last X steps
-    size_t recording_steps;
-    bool record_magnetisation = true;
-    bool record_energy = true;
-    bool record_susceptibility = false;
-    bool record_specific_heat = false;
+    size_t total_sweeps;
+    size_t recording_sweeps;
+    bool record_lattice = false;
     bool record_correlation_length = false;
     bool record_correlation_function = false;
 };

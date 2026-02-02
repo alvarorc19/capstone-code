@@ -11,7 +11,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include <omp.h>
+#include <chrono>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 #include <toml++/toml.hpp>
@@ -43,7 +43,7 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
     // Assign all the parameters to the struct
     parameters.project_folder_path = project_folder_path;
     parameters.L = static_cast<int>(tbl["physical_settings"]["L"].value_or<int64_t>(0));
-    parameters.dim = static_cast<int>(tbl["physical_settings"]["dimension"].value_or<int64_t>(0));
+    parameters.N = std::pow(parameters.L, parameters.dim);
     parameters.T = tbl["physical_settings"]["temperature"].value_or<double>(0.0);
     parameters.beta = 1 / parameters.T;
     parameters.J = tbl["physical_settings"]["J"].value_or<double>(0.0);
@@ -53,21 +53,36 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
     parameters.vec_H = extract_double_vector_toml(*tbl["physical_settings"]["vec_H"].as_array());
 
     parameters.model_type = model_type;
-    parameters.time_steps = static_cast<int>(tbl["simulation_settings"]["time_steps"].value_or<int64_t>(0));
-    parameters.recording_steps = static_cast<size_t>(tbl["simulation_settings"]["recording_steps"].value_or<int64_t>(0));
-    parameters.record_magnetisation = tbl["simulation_settings"]["record_magnetisation"].value_or<bool>(false);
-    parameters.record_energy = tbl["simulation_settings"]["record_energy"].value_or<bool>(false);
-    parameters.record_susceptibility = tbl["simulation_settings"]["record_susceptibility"].value_or<bool>(false);
-    parameters.record_specific_heat = tbl["simulation_settings"]["record_specific_heat"].value_or<bool>(false);
+    parameters.total_sweeps = static_cast<size_t>(tbl["simulation_settings"]["total_sweeps"].value_or<int64_t>(0));
+    parameters.recording_sweeps = static_cast<size_t>(tbl["simulation_settings"]["recording_sweeps"].value_or<int64_t>(0));
+    parameters.record_lattice = tbl["simulation_settings"]["record_lattice"].value_or<bool>(false);
     parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false);
     parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);}
 
 void Simulation::run() {
 
     initialise_model();
+    
+    // Start timer
+    const auto start{std::chrono::steady_clock::now()};
 
-    for(int i = 0; i < parameters.time_steps - (parameters.recording_steps * std::pow(parameters.L, parameters.dim)); i++){
-        do_metropolis_step();
+    do_cluster_sweep();
+
+    // End timer
+    const auto finish{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> elapsed_seconds{finish - start};
+    time_step++;
+
+    #pragma omp critical
+    {
+        std::cout << "One sweep took " << elapsed_seconds.count() << " s\n";
+        std::cout << "Expected execution time (not accounting for writing) =  " << 
+            elapsed_seconds.count() * parameters.total_sweeps << " s " << std::endl;
+    }
+
+    for(int i = 1; i < parameters.total_sweeps - parameters.recording_sweeps; i++){
+        // do_metropolis_sweep();
+        do_cluster_sweep();
         time_step++;
         // #pragma omp critical
         // {
@@ -86,6 +101,39 @@ void Simulation::run() {
         {
             std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
         }
+    if (parameters.record_lattice) {
+        for(int i = 0; i < parameters.recording_sweeps; i++){
+            // do_metropolis_recording_sweep();
+            // time_step++;
+            // write_lattice(i);
+
+            // Recording sweep records every step instead of every sweep (MCS)
+            // do_cluster_recording_sweep();
+            do_cluster_sweep();
+            update_observables();
+            write_lattice(i);
+            time_step++;
+            // #pragma omp critical
+            // {
+            // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+            // }
+        }
+    }
+    else if (not parameters.record_lattice) {
+        for(int i = 0; i < parameters.recording_sweeps; i++){
+            // do_metropolis_recording_sweep();
+            
+            // Recording sweep records every step instead of every sweep (MCS)
+            // do_cluster_recording_sweep();
+            do_cluster_sweep();
+            update_observables();
+            time_step++;
+            // #pragma omp critical
+            // {
+            // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+            // }
+        }
+
     }
     write_observables();
     file->flush();
@@ -132,16 +180,15 @@ void Simulation::initialise_model() {
 }
 
 void Simulation::initialise_writing() {
-    size_t N = std::pow(parameters.L, parameters.dim);
     std::filesystem::path filename = parameters.project_folder_path / std::filesystem::path("results.h5");
     this->file = std::make_unique<HighFive::File>(filename.string(), HighFive::File::Truncate);
 
-    std::vector<size_t> current_dims = {0, N}; 
-    std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, N}; 
+    std::vector<size_t> current_dims = {0, parameters.N}; 
+    std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, parameters.N}; 
     
     // Define chunks, how data is stored
-    size_t chunk_rows = std::min(parameters.recording_steps, static_cast<size_t>(375));
-    std::vector<hsize_t> chunk_dims = {chunk_rows, N};
+    size_t chunk_rows = std::min(parameters.recording_sweeps, static_cast<size_t>(375));
+    std::vector<hsize_t> chunk_dims = {chunk_rows, parameters.N};
 
     HighFive::DataSpace lattice_space(current_dims, max_dims);
     HighFive::DataSetCreateProps props;
@@ -169,8 +216,9 @@ void Simulation::initialise_writing() {
         throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
     }
     
-    observables.energy_array.reserve(parameters.recording_steps);
-    observables.magnetisation_array.reserve(parameters.recording_steps);
+    // Beware with the space reserved
+    observables.energy_array.reserve(parameters.recording_sweeps * parameters.N);
+    observables.magnetisation_array.reserve(parameters.recording_sweeps * parameters.N);
 }
 
 void Simulation::do_metropolis_step() {
@@ -182,15 +230,62 @@ void Simulation::do_metropolis_step() {
     }
 }
 
-int Simulation::do_metropolis_recording_sweep(int time_step) {
-    size_t N = std::pow(parameters.L, parameters.dim);
-    for (int i = 0; i < N; i++){
+/** 
+* Here time is measured as MCS/site, Monte Carlo Steps per site.
+* So 1 step is N flips for N particles
+*/
+void Simulation::do_metropolis_sweep(){
+    for (int i = 0; i < parameters.N; i++){
+        do_metropolis_step();
+    }
+}
+
+void Simulation::do_metropolis_recording_sweep() {
+    for (int i = 0; i < parameters.N; i++){
         do_metropolis_step();
         update_observables();
-        time_step++;
     }
-    return time_step;
 }
+
+/**
+* Here we need to normalise the MCS steps things (or not)
+* I can do this like this at the moment and leave it.
+*
+* TODO Normalise the MCS,
+* 
+* Total MCS = {\sum (size of each cluster)} / number particles
+*/
+void Simulation::do_cluster_step(){
+    int random_index = rng::random_int_number(rng::engine, 0, parameters.N);
+    double angle_r = rng::random_angle(rng::engine);
+    double angle_flip = rng::random_angle(rng::engine);
+    int spins_flipped = 0;
+    int new_spins_flipped = 1;
+    model->change_spin(random_index, angle_flip);
+
+    do {
+        spins_flipped = new_spins_flipped;
+        model->cluster_flip_neighbours(random_index, angle_r, new_spins_flipped, angle_flip);
+    } while (spins_flipped < new_spins_flipped);
+    
+   // return spins_flipped; 
+}
+
+
+void Simulation::do_cluster_sweep(){
+    for (int i = 0; i < parameters.N; i++){
+        do_cluster_step();
+}
+}
+
+void Simulation::do_cluster_recording_sweep(){
+    for (int i = 0; i < parameters.N; i++){
+        do_cluster_step();
+        update_observables();
+        write_lattice(i+time_step);
+}
+}
+
 
 ivec Simulation::extract_int_vector_toml(const toml::array & array){
     ivec int_vector;

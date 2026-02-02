@@ -7,9 +7,9 @@ import subprocess
 project_folder = "./projects"
 project_name = "test"
 
-total_sweeps = 2 * 10
-recording_sweeps = 10
-L = 128
+total_sweeps = 300
+recording_sweeps = 100
+L = 10
 dim = 2
 N = L**dim
 temp = 0.7
@@ -32,14 +32,11 @@ parameters = {
         "vec_H" : [0.0,0.0,2.0],
     },
     "simulation_settings" : {
-        "time_steps" : total_sweeps * N,
-        "recording_steps" : recording_sweeps,
-        "record_magnetisation" : True,
-        "record_energy" : True,
-        "record_susceptibility" : True,
-        "record_specific_heat" : True,
+        "total_sweeps" : total_sweeps,
+        "recording_sweeps" : recording_sweeps,
+        "record_lattice": True,
         "record_correlation_length" : False,
-        "record_correlation_function" : False
+        "record_correlation_function" : False,
     },
     "git_hash":get_git_hash(),
     "seed":42
@@ -51,8 +48,8 @@ print("Base directory: ", base)
 seed_number = 0
 
 # Various temperatures
-temp_array = np.linspace(0.3,1.5, 20).tolist()
-# temp_array = []
+# temp_array = np.linspace(0.3,1.5, 20).tolist()
+temp_array = []
 
 # Varius sizes
 # length_array = np.linspace(10, 1000, 20, dtype=int).tolist()

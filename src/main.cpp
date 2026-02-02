@@ -66,7 +66,6 @@ int main(int argc, char *argv[]){
             }
         }
         std::cout << "Number of parameters = " << directories.size() << std::endl;
-        /* #pragma omp parallel for schedule(dynamic) */
         #pragma omp parallel for
         for (int i = 0; i < directories.size(); i++){
             // out commands need to be wrapped around this
@@ -74,6 +73,10 @@ int main(int argc, char *argv[]){
             {
             std::cout << "Starting parameter combination number " << i +1 << " out of " <<
                 directories.size() << std::endl;
+            }
+            #pragma omp critical
+            {
+            std::cout <<"started simlation pointer class" << std::endl;
             }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             // Initialise in critical since multithreading messes up parsing and writing
