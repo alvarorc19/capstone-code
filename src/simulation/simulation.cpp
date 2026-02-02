@@ -102,15 +102,15 @@ void Simulation::run() {
         {
             std::cout << "step " << i << " out of " << parameters.recording_sweeps << "\n";
         }
-        if (parameters.record_lattice) {
-            for(int i = 0; i < parameters.recording_sweeps * parameters.N; i++){
+        if (parameters.record_lattice and (parameters.T == 0.3 or parameters.T == 0.868421052631579 or parameters.T == 0.9315789473684211 or parameters.T == 1.5)) {
+            for(int i = 0; i < parameters.recording_sweeps; i++){
                 // do_metropolis_recording_sweep();
                 // time_step++;
                 // write_lattice(i);
 
                 // Recording sweep records every step instead of every sweep (MCS)
                 // do_cluster_recording_sweep();
-                do_cluster_step();
+                do_cluster_sweep();
                 update_observables();
                 write_lattice(i);
                 time_step++;
@@ -134,6 +134,21 @@ void Simulation::run() {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
                 // }
             }
+        }
+        else {
+            for(int i = 0; i < parameters.recording_sweeps; i++){
+                // do_metropolis_recording_sweep();
+                
+                // Recording sweep records every step instead of every sweep (MCS)
+                // do_cluster_recording_sweep();
+                do_cluster_sweep();
+                update_observables();
+                time_step++;
+                // #pragma omp critical
+                // {
+                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
+                // }
+        }
 
         }
     }
