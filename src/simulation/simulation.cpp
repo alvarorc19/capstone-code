@@ -62,8 +62,8 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
 
 void Simulation::run() {
 
-    initialise_model();
-    
+    visited.assign(parameters.N, 0);
+    cluster_stack.reserve(parameters.N);
     // Start timer
     const auto start{std::chrono::steady_clock::now()};
 
@@ -281,30 +281,35 @@ void Simulation::do_metropolis_recording_sweep() {
 * Total MCS = {\sum (size of each cluster)} / number particles
 */
 void Simulation::do_cluster_step(){
+    // Get the random stuff
     int random_index = rng::random_int_number(rng::engine, 0, parameters.N-1);
     double angle_r = rng::random_angle(rng::engine);
     double angle_flip = rng::random_angle(rng::engine);
     model->change_spin(random_index, angle_flip);
-    ivec cluster_stack{random_index};
+    
+    // Make stack to store indices used
+    cluster_stack.clear();
+    cluster_stack.emplace_back(random_index);
+    std::fill(visited.begin(), visited.end(), 0);
+    cluster_stack.reserve(parameters.N);
+
+    int current_index;
     spins_flipped++;
 
     while(!cluster_stack.empty()){
-        int current_index = cluster_stack.back();
+        current_index = cluster_stack.back();
         cluster_stack.pop_back();
-        ivec flipped_neigh = model->cluster_flip_neighbours(current_index, angle_r,angle_flip);
+        model->cluster_flip_neighbours(current_index, angle_r,angle_flip, cluster_stack, spins_flipped, visited);
         
-        for (int neigh_index: flipped_neigh) {
-            cluster_stack.push_back(neigh_index);
-            spins_flipped++;
-        }
     } 
 }
 
 
 void Simulation::do_cluster_sweep(){
-    for (int i = 0; i < parameters.N; i++){
-        do_cluster_step();
-}
+    spins_flipped = 0;
+        while (spins_flipped < parameters.N) {
+            do_cluster_step();
+        }
 }
 
 void Simulation::do_cluster_recording_sweep(){

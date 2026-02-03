@@ -80,6 +80,7 @@ int main(int argc, char *argv[]){
             {
                 sim->parse_parameters(directories[i], running_model);
                 sim->initialise_writing();
+                sim->initialise_model();
             }
             sim->run();
 

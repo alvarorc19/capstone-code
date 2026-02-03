@@ -29,6 +29,8 @@ class Simulation {
         std::unique_ptr<HighFive::File> file;/**< a unique_ptr element that points to the HDF5 output file */
         int time_step = 0;
         int spins_flipped = 0;
+        ivec cluster_stack;
+        std::vector<uint8_t> visited;
         std::unique_ptr<ModelBase> model;/**< a unique_ptr element that points to any of the models created with the Model class or its parent ModelBase */
 
         /**

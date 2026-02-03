@@ -23,6 +23,7 @@
           nativeBuildInputs = with pkgs; [
             # clang_20
             gcc_multi
+            gdb
           ];
           buildInputs = with pkgs; [
             ffmpeg # for video generation

@@ -135,7 +135,7 @@ class Model: public ModelBase{
     // TODO implement this
         void change_spin(int index, double spin) override {}
 
-        ivec cluster_flip_neighbours(int index, double direction, double angle_flip) override{ivec a;return a;}
+        void cluster_flip_neighbours(int index, double direction, double angle_flip, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited) override{};
 
 };
 

@@ -48,8 +48,9 @@ class Lattice {
         int get_particle_num() { return particle_num;}
         const std::vector<T>& get_lattice() const {return lattice;}
         std::vector<T>& get_lattice(){return lattice;}
-        std::vector<int> get_neighbours_indices(ivec indices);
-        std::vector<int> get_neighbours_indices(int index);
+        const std::vector<int>& get_neighbours_table() const {return neighbours_table;}
+        // // Ver fast way but with another library I think
+        // const int* get_neighbours_table_ptr() const {return neighbours_table.data();}
 
         //Type specific
         virtual T& get_lattice_site(ivec indices) = 0;
