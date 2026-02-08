@@ -9,6 +9,7 @@ sys.path.insert(0, str(project_root))
 
 import toml
 import json
+import pyerrors as pe
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -50,8 +51,8 @@ def do_observable_plot(
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     params = [x for x in directory.iterdir() if x.is_dir()]
     temp_array = np.array([])
+    error_array = np.array([])
     length_array = np.array([])
-    label_array = np.array([])
     observable_array = np.array([])
 
     compute_observable = _find_observable_function(observable)
@@ -75,7 +76,7 @@ def do_observable_plot(
     )
 
     if x_data == "temperature":
-        _,sorted_temp, observable_array = zip(*sorted(zip(length_array, temp_array, observable_array)))
+        _,sorted_temp, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array.value, observable_array.dvalue)))
         cmap = plt.cm.tab20
         colors = cmap(np.arange(len(unique_lengths)*2))
 
@@ -84,6 +85,7 @@ def do_observable_plot(
                 axs = ax,
                 xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)],
                 yaxis = observable_array[i * len(unique_temp):(i+1)*len(unique_temp)],
+                yerr = observable_error[i * len(unique_temp):(i+1)*len(unique_temp)],
                 data_label = f"$L = {l}$",
                 linear_fit = linear_fit,
                 log_fit = log_fit,
