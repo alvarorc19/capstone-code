@@ -51,9 +51,9 @@ def do_observable_plot(
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     params = [x for x in directory.iterdir() if x.is_dir()]
     temp_array = np.array([])
-    error_array = np.array([])
     length_array = np.array([])
     observable_array = np.array([])
+    observable_error = np.array([])
 
     compute_observable = _find_observable_function(observable)
 
@@ -68,7 +68,9 @@ def do_observable_plot(
         print("direc", direc)
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        observable_array = np.append(observable_array, compute_observable(direc))
+        observable_obs = compute_observable(direc)
+        observable_array = np.append(observable_array, observable_obs.value)
+        observable_error = np.append(observable_error, observable_obs.dvalue)
 
     fig, ax = plt.subplots(
         ncols=1,
@@ -76,7 +78,7 @@ def do_observable_plot(
     )
 
     if x_data == "temperature":
-        _,sorted_temp, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array.value, observable_array.dvalue)))
+        _,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
         cmap = plt.cm.tab20
         colors = cmap(np.arange(len(unique_lengths)*2))
 
