@@ -48,6 +48,7 @@ struct SimulationParameters {
     bool record_lattice = false;
     bool record_correlation_length = false;
     bool record_correlation_function = false;
+    bool save_last_state = false;
 };
 
 

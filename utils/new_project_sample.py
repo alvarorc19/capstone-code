@@ -38,6 +38,7 @@ parameters = {
         "record_lattice": True,
         "record_correlation_length" : False,
         "record_correlation_function" : False,
+        "save_last_state": False,
     },
     "git_hash":get_git_hash(),
     "seed":42

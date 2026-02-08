@@ -40,8 +40,8 @@ def generate_lattice(time_step:int, df:pd.DataFrame, config:dict) -> np.array:
     return full_dim_grid
 
 def main(project_name: str, parameter_combination: int):
-    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
-    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects") 
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects") 
     project_path = project_root/ project_name / f"parameter-config-{parameter_combination}"
     config = toml.load(project_path / "config.toml")
 
@@ -64,6 +64,7 @@ def main(project_name: str, parameter_combination: int):
     # frame_indices = range(0, 10000, stride)
 
     frames_ps = 10
+    print("lattice size", lattice_size)
 
     def update(frame):
         # actual_frame = frame_indices[frame]
@@ -74,7 +75,7 @@ def main(project_name: str, parameter_combination: int):
     # html = ani.to_jshtml()
     # with open("analyze/vid_dump/temperature50.html", "w") as f:
     #     f.write(html)
-    save_path = project_path.parent.parent.parent / "analyze" / "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.gif"
+    save_path = project_path.parent.parent.parent / "analyze" / "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
     save_path.parent.mkdir(parents = True, exist_ok = True)
     print("save path", save_path)
     ani.save(save_path, writer = "ffmpeg", fps =frames_ps)
@@ -82,7 +83,7 @@ def main(project_name: str, parameter_combination: int):
 
 if __name__ == "__main__":
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "temp20_l128_dim2_10-4sweeps"
+    project_name = "test1000"
     parameter_combination = 0
     main(project_name, parameter_combination)
     # for i in range(30):

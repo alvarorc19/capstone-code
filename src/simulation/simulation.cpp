@@ -12,6 +12,7 @@
 #include <string>
 #include <cmath>
 #include <chrono>
+#include <omp.h>
 #include <highfive/H5Easy.hpp>
 #include <highfive/highfive.hpp>
 #include <toml++/toml.hpp>
@@ -58,7 +59,9 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
     parameters.recording_sweeps = static_cast<size_t>(tbl["simulation_settings"]["recording_sweeps"].value_or<int64_t>(0));
     parameters.record_lattice = tbl["simulation_settings"]["record_lattice"].value_or<bool>(false);
     parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false);
-    parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);}
+    parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);
+    parameters.save_last_state = tbl["simulation_settings"]["save_last_state"].value_or<bool>(false);
+}
 
 void Simulation::run() {
 
@@ -112,8 +115,11 @@ void Simulation::run() {
                 // do_cluster_recording_sweep();
                 do_cluster_sweep();
                 update_observables();
-                write_lattice(i);
                 time_step++;
+                #pragma omp critical (HDF5)
+                {
+                write_lattice(i);
+                }
                 // #pragma omp critical
                 // {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
@@ -156,6 +162,13 @@ void Simulation::run() {
 
         }
     }
+
+    // TODO
+    // if (parameters.save_last_state){
+    //     HighFive::DataSet last_state = file->createDataSet("last_state", );
+    //
+    // }
+
     write_observables();
     file->flush();
     #pragma omp critical
@@ -206,44 +219,53 @@ void Simulation::initialise_writing() {
     this->file = std::make_unique<HighFive::File>(filename.string(), HighFive::File::Truncate);
 
     if (parameters.record_lattice){
+        std::vector<size_t> current_dims = {0, parameters.N}; 
+        std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, parameters.N}; 
+        
+        // Define chunks, how data is stored
+        size_t chunk_rows = std::min(parameters.recording_sweeps, static_cast<size_t>(375));
+        std::vector<hsize_t> chunk_dims = {chunk_rows, parameters.N};
 
-    std::vector<size_t> current_dims = {0, parameters.N}; 
-    std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, parameters.N}; 
-    
-    // Define chunks, how data is stored
-    size_t chunk_rows = std::min(parameters.recording_sweeps, static_cast<size_t>(375));
-    std::vector<hsize_t> chunk_dims = {chunk_rows, parameters.N};
+        HighFive::DataSpace lattice_space(current_dims, max_dims);
+        HighFive::DataSetCreateProps props;
+        props.add(HighFive::Chunking(chunk_dims));
 
-    HighFive::DataSpace lattice_space(current_dims, max_dims);
-    HighFive::DataSetCreateProps props;
-    props.add(HighFive::Chunking(chunk_dims));
+        if (parameters.model_type == "xy") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<double>(
+                    "lattice",
+                    lattice_space,
+                    props
+                )
+            );
+        }
+        else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<int>(
+                    "lattice",
+                    lattice_space,
+                    props
+                )
+            );
+        }
+        else { 
+            throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
+        }
+    }
 
-    if (parameters.model_type == "xy") {
-        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-            file->createDataSet<double>(
-                "lattice",
-                lattice_space,
-                props
-            )
-        );
+    if (parameters.record_correlation_length){
+        observables.correlation_length.reserve(parameters.recording_sweep);
     }
-    else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
-        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-            file->createDataSet<int>(
-                "lattice",
-                lattice_space,
-                props
-            )
-        );
-    }
-    else { 
-        throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
-    }
-    }
+
+    // TODO
+    // if (parameters.record_correlation_function){
+    //
+    // }
+
     
     // Beware with the space reserved
-    observables.energy_array.reserve(parameters.recording_sweeps * parameters.N);
-    observables.magnetisation_array.reserve(parameters.recording_sweeps * parameters.N);
+    observables.energy_array.reserve(parameters.recording_sweeps);
+    observables.magnetisation_array.reserve(parameters.recording_sweeps);
 }
 
 void Simulation::do_metropolis_step() {
@@ -347,6 +369,7 @@ dvec Simulation::extract_double_vector_toml(const toml::array& array) {
 void Simulation::update_observables() {
     observables.energy_array.emplace_back(model->compute_total_energy());
     observables.magnetisation_array.emplace_back(model->compute_magnetisation());
+    observables.correlation_length.emplace_back(model->compute_correlation_length());
 }
 
 void Simulation::write_lattice(int time) {
