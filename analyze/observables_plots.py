@@ -139,6 +139,7 @@ def _add_scatter_data(
         axs:plt.axes,
         xaxis:np.ndarray,
         yaxis:np.ndarray,
+        yerr:np.ndarray | float,
         data_label:str = "",
         linear_fit:bool = False,
         log_fit:bool = False,
@@ -149,9 +150,9 @@ def _add_scatter_data(
     assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
     
     if data_label != "":
-        axs.scatter(xaxis, yaxis, label = data_label, color = main_color)
+        axs.scatter(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color)
     else:
-        axs.scatter(xaxis, yaxis, color = main_color)
+        axs.scatter(xaxis, yaxis, yerr = yerr,color = main_color)
 
 
     if linear_fit:
