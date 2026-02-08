@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <omp.h>
 #include <chrono>
 #include <omp.h>
 #include <highfive/H5Easy.hpp>
@@ -93,20 +94,17 @@ void Simulation::run() {
         //     std::cout << "Thermalisation step temp = " << parameters.T <<" = " << i <<"\n";
         // }
     }
+    const auto therm{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> therm_seconds{therm - start};
     #pragma omp critical
     {
-        std::cout << "Finished thermalisation, starting writing" << "\n";
+        std::cout << "Thermalisation finished, took " << therm_seconds.count() <<"s"<<std::endl;
     }
 
     for(int i = 0; i < parameters.recording_sweeps; i++){
         //time_step = do_metropolis_recording_sweep(time_step);
         //write_lattice(i);
-        #pragma omp critical
-        {
-            std::cout << "step " << i << " out of " << parameters.recording_sweeps << "\n";
-        }
-        if (parameters.record_lattice and (parameters.T == 0.3 or parameters.T == 0.868421052631579 or parameters.T == 0.9315789473684211 or parameters.T == 1.5)) {
-            for(int i = 0; i < parameters.recording_sweeps; i++){
+        if (parameters.record_lattice) {
                 // do_metropolis_recording_sweep();
                 // time_step++;
                 // write_lattice(i);
@@ -124,10 +122,8 @@ void Simulation::run() {
                 // {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
                 // }
-            }
         }
         else if (not parameters.record_lattice) {
-            for(int i = 0; i < parameters.recording_sweeps; i++){
                 // do_metropolis_recording_sweep();
                 
                 // Recording sweep records every step instead of every sweep (MCS)
@@ -139,10 +135,8 @@ void Simulation::run() {
                 // {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
                 // }
-            }
         }
         else {
-            for(int i = 0; i < parameters.recording_sweeps; i++){
                 // do_metropolis_recording_sweep();
                 
                 // Recording sweep records every step instead of every sweep (MCS)
@@ -151,14 +145,10 @@ void Simulation::run() {
                 update_observables();
                 time_step++;
 
-                if (spins_flipped > 1000 * parameters.N){
-                    break;
-                }
                 // #pragma omp critical
                 // {
                 // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
                 // }
-        }
 
         }
     }
@@ -229,7 +219,31 @@ void Simulation::initialise_writing() {
         HighFive::DataSpace lattice_space(current_dims, max_dims);
         HighFive::DataSetCreateProps props;
         props.add(HighFive::Chunking(chunk_dims));
+        HighFive::DataSpace lattice_space(current_dims, max_dims);
+        HighFive::DataSetCreateProps props;
+        props.add(HighFive::Chunking(chunk_dims));
 
+        if (parameters.model_type == "xy") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<double>(
+                    "lattice",
+                    lattice_space,
+                    props
+                )
+            );
+        }
+        else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<int>(
+                    "lattice",
+                    lattice_space,
+                    props
+                )
+            );
+        }
+        else { 
+            throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
+        }
         if (parameters.model_type == "xy") {
             parameters.lattice_set = std::make_unique<HighFive::DataSet>(
                 file->createDataSet<double>(

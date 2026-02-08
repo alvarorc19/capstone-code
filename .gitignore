@@ -42,12 +42,8 @@ tmp.sh
 hpc_run.sh
 
 # Output
-analyze/img_dump/*
-analyze/vid_dump/*
-analyze/critical_exponents/*
-!analyze/img_dump
-!analyze/vid_dump
-!analyze/critical_exponents
+analyze/output/*
+!analyze/output
 
 # Input
 utils/new_project.py
