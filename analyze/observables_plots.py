@@ -8,6 +8,7 @@ project_root = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import toml
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -40,54 +41,89 @@ def do_observable_plot(
         observable_title:str,
         directory:pathlib.Path, 
         x_data:str = "temperature",
+        x2_data:str | None = None,
         log_plot:bool = False,
         log_fit:bool = False,
         linear_fit:bool = False,
     ):
 
-    saving_path = directory.parent.parent / "analyze" / "img_dump"
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     params = [x for x in directory.iterdir() if x.is_dir()]
-    x_array = np.array([])
+    temp_array = np.array([])
+    length_array = np.array([])
+    label_array = np.array([])
     observable_array = np.array([])
 
     compute_observable = _find_observable_function(observable)
 
+    with open(directory / "global_parameters.json", "r") as f:
+        global_config = json.load(f)
+    unique_lengths = global_config["physical_settings"]["L"]
+    unique_temp = global_config["physical_settings"]["temperature"]
+
+
     for direc in params:
         config = toml.load(direc / "config.toml")
         print("direc", direc)
-        x_array = np.append(x_array, import_physical_parameter(direc, x_data))
+        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
+        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
         observable_array = np.append(observable_array, compute_observable(direc))
 
     fig, ax = plt.subplots(
         ncols=1,
         nrows=1
     )
+
     if x_data == "temperature":
-        ax = _generate_scatter_plot(
+        _,sorted_temp, observable_array = zip(*sorted(zip(length_array, temp_array, observable_array)))
+        cmap = plt.cm.tab20
+        colors = cmap(np.arange(len(unique_lengths)*2))
+
+        for i,l in enumerate(unique_lengths):
+            ax = _add_scatter_data(
+                axs = ax,
+                xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)],
+                yaxis = observable_array[i * len(unique_temp):(i+1)*len(unique_temp)],
+                data_label = f"$L = {l}$",
+                linear_fit = linear_fit,
+                log_fit = log_fit,
+                main_color = colors[i],
+                secondary_color = colors[i+1],
+            )
+
+        ax = _add_format_plot(
             axs = ax,
-            xaxis = x_array,
             xlabel="Temperature, $T$",
-            yaxis = observable_array,
             ylabel=observable_title,
-            title = f"{observable} vs temperature",
-            data_label = "Data",
+            title = f"{observable.capitalize()} vs Temperature",
             logscale = log_plot,
             linear_fit = linear_fit,
-            log_fit = log_fit,
         )
 
     elif x_data == "length":
-        ax = _generate_scatter_plot(
+        _,sorted_length = zip(*sorted(zip(temp_array, length_array)))
+        cmap = plt.cm.tab20
+        colors = cmap(np.arange(len(unique_temp)*2))
+
+        for i,t in enumerate(unique_temp):
+            ax = _add_scatter_data(
+                axs = ax,
+                xaxis = length_array[len(unique_lengths) * i : (i+1) * len(unique_lengths)],
+                yaxis = observable_array,
+                data_label = f"$T = {t}$",
+                linear_fit = linear_fit,
+                log_fit = log_fit,
+                main_color = colors[i],
+                secondary_color = colors[i+1],
+            )
+
+        ax = _add_format_plot(
             axs = ax,
-            xaxis = x_array,
             xlabel="Length, $L$",
-            yaxis = observable_array,
-            ylabel= observable_title,
-            title = f"{observable} vs temperature",
-            data_label = "Data",
+            ylabel=observable_title,
+            title = f"{observable.capitalize()} vs Length",
             logscale = log_plot,
             linear_fit = linear_fit,
-            log_fit = log_fit,
         )
     else:
         print("This is not incorporated, say temperature or length")
@@ -95,6 +131,68 @@ def do_observable_plot(
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_{observable}.pdf")
+
+
+def _add_scatter_data(
+        axs:plt.axes,
+        xaxis:np.ndarray,
+        yaxis:np.ndarray,
+        data_label:str = "",
+        linear_fit:bool = False,
+        log_fit:bool = False,
+        main_color: str = 'k',
+        secondary_color: str = 'coral'
+    ) -> plt.axes:
+
+    assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
+    
+    if data_label != "":
+        axs.scatter(xaxis, yaxis, label = data_label, color = main_color)
+    else:
+        axs.scatter(xaxis, yaxis, color = main_color)
+
+
+    if linear_fit:
+        p_fitted = np.polynomial.Polynomial.fit(xaxis, yaxis, deg=1)
+        lin_fit = p_fitted.convert().coef
+        axs.plot(xaxis, xaxis * lin_fit[1] + lin_fit[0], label="Linear fit", alpha = 0.7, ls="--", color =secondary_color)
+    
+    if log_fit:
+        p_fitted = np.polynomial.Polynomial.fit(np.log(xaxis), np.log(yaxis), deg=1)
+        log_fit = p_fitted.convert().coef
+        axs.plot(xaxis, np.exp(log_fit[0]) * (xaxis ** log_fit[1]), label="Log fit", alpha = 0.5, ls="--", color = secondary_color)
+
+    return axs
+
+def _add_format_plot(
+        axs:plt.axes,
+        xlabel:str,
+        ylabel:str,
+        title:str,
+        logscale:bool = False,
+        linear_fit:bool = False,
+    ) -> plt.axes:
+
+    axs.set_xlabel(xlabel)
+    axs.set_ylabel(ylabel)
+    axs.set_title(title)
+
+    if (logscale and not linear_fit):
+        axs.set_yscale('log')
+        axs.set_xscale('log')
+
+    # Make latex formatter
+    latex_formatter = ticker.FuncFormatter(lambda x, pos: f'${x:g}$')
+
+    # Apply formatting
+    axs.xaxis.set_major_formatter(latex_formatter)
+    axs.yaxis.set_major_formatter(latex_formatter)
+    axs.yaxis.set_minor_formatter(latex_formatter)
+    axs.xaxis.set_minor_formatter(latex_formatter)
+
+    axs.legend()
+
+    return axs
 
 
 def _generate_scatter_plot(

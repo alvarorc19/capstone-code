@@ -21,7 +21,7 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "temp20_l128_dim2_10-4sweeps"
+    project_name = "temp20_l4_dim2_20-3sweeps"
     # parameter_combination = 2
     # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
     project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
@@ -43,7 +43,7 @@ def main():
         )
 
     # Critical exponents
-    saving_path = project_path.parent.parent / "analyze" / "critical_exponents"
+    saving_path = project_path.parent.parent / "analyze" /"output"/ "critical_exponents"
 
     saving_path.mkdir(parents = True, exist_ok = True)
     critical_temp = 0.89

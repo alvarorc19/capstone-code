@@ -74,7 +74,7 @@ def main(project_name: str, parameter_combination: int):
     # html = ani.to_jshtml()
     # with open("analyze/vid_dump/temperature50.html", "w") as f:
     #     f.write(html)
-    save_path = project_path.parent.parent.parent / "analyze" / "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.gif"
+    save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.gif"
     save_path.parent.mkdir(parents = True, exist_ok = True)
     print("save path", save_path)
     ani.save(save_path, writer = "ffmpeg", fps =frames_ps)
