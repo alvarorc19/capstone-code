@@ -54,6 +54,8 @@ def do_observable_plot(
     params = [x for x in directory.iterdir() if x.is_dir()]
     temp_array = np.array([])
     length_array = np.array([])
+    tauint_array = np.array([])
+    tauint_error = np.array([])
     observable_array = np.array([])
     observable_error = np.array([])
 
@@ -71,6 +73,10 @@ def do_observable_plot(
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
         observable_obs = compute_observable(direc)
+        keys = list(observable_obs.e_tauint.keys())
+        print("tauint keys", keys)
+        tauint_array = np.append(tauint_array, observable_obs.e_tauint[keys[0]])
+        tauint_error = np.append(tauint_error, observable_obs.e_dtauint[keys[0]])
         observable_array = np.append(observable_array, observable_obs.value)
         observable_error = np.append(observable_error, observable_obs.dvalue)
 
@@ -79,17 +85,35 @@ def do_observable_plot(
         nrows=1
     )
 
+    figtau, axtau = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+
     if x_data == "temperature":
-        _,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
+        _,sorted_temp, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
+        _,sorted_temp, tauint_array, tauint_error = zip(*sorted(zip(length_array, temp_array, tauint_array, tauint_error)))
         cmap = plt.cm.tab20
         colors = cmap(np.arange(len(unique_lengths)*2))
 
         for i,l in enumerate(unique_lengths):
             ax = _add_scatter_data(
                 axs = ax,
-                xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)],
+                xaxis = sorted_temp[i*len(unique_temp): (i+1)*len(unique_temp)],
                 yaxis = observable_array[i * len(unique_temp):(i+1)*len(unique_temp)],
                 yerr = observable_error[i * len(unique_temp):(i+1)*len(unique_temp)],
+                data_label = f"$L = {l}$",
+                linear_fit = linear_fit,
+                log_fit = log_fit,
+                main_color = colors[i],
+                secondary_color = colors[i+1],
+            )
+
+            axtau = _add_scatter_data(
+                axs = axtau,
+                xaxis = sorted_temp[i*len(unique_temp): (i+1)*len(unique_temp)],
+                yaxis = tauint_array[i * len(unique_temp):(i+1)*len(unique_temp)],
+                yerr = tauint_error[i * len(unique_temp):(i+1)*len(unique_temp)],
                 data_label = f"$L = {l}$",
                 linear_fit = linear_fit,
                 log_fit = log_fit,
@@ -102,6 +126,15 @@ def do_observable_plot(
             xlabel="Temperature, $T$",
             ylabel=observable_title,
             title = f"{observable.capitalize()} vs Temperature",
+            logscale = log_plot,
+            linear_fit = linear_fit,
+        )
+
+        axtau = _add_format_plot(
+            axs = axtau,
+            xlabel="Temperature, $T$",
+            ylabel=r"$\tau_{\textrm{int}}$",
+            title = f" Autocorrelated time for {observable.capitalize()}",
             logscale = log_plot,
             linear_fit = linear_fit,
         )
@@ -137,6 +170,8 @@ def do_observable_plot(
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_{observable}.pdf")
+    figtau.savefig(saving_path / f"{directory.name}_tauint_{observable}.pdf")
+    plt.close(fig)
 
 
 def _add_scatter_data(
