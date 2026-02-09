@@ -27,8 +27,8 @@ def main():
     project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     project_path = project_root / project_name
     # config = toml.load(project_path / "config.toml")
-    observables = ["magnetisation", "energy", "specific_heat", "susceptibility"]
-    observables_titles = [r"Magnetisation $\langle |m| \rangle$", r"Energy $\langle E \rangle$", "Specific Heat $C_H$", r"Magnetic Susceptibility $\chi$"]
+    observables = ["magnetisation", "energy", "specific_heat", "susceptibility", "binder_cumulant","normalised_energy"]
+    observables_titles = [r"Magnetisation $\langle |m| \rangle$", r"Energy $\langle E \rangle$", "Specific Heat $C_H$", r"Magnetic Susceptibility $\chi$", r"Binder cumulant $U_\infty$", r"Energy $E/J L^2$"]
 
     # Create plots
     for observable, observables_title in zip(observables, observables_titles):

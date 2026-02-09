@@ -20,6 +20,7 @@ from compute_observables import (
     compute_susceptibility,
     compute_specific_heat,
     compute_binder_cumulant,
+    compute_normalised_energy,
 )
 from utils.h5_utils import (
     import_observable,
@@ -34,6 +35,7 @@ def _find_observable_function(observable:str):
         "susceptibility":compute_susceptibility,
         "specific_heat":compute_specific_heat,
         "binder_cumulant":compute_binder_cumulant,
+        "normalised_energy":compute_normalised_energy,
         }
     return observable_functions[observable]
 
@@ -152,9 +154,9 @@ def _add_scatter_data(
     assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
     
     if data_label != "":
-        axs.scatter(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color)
+        axs.errorbar(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color, fmt = ".")
     else:
-        axs.scatter(xaxis, yaxis, yerr = yerr,color = main_color)
+        axs.errorbar(xaxis, yaxis, yerr = yerr,color = main_color, fmt = ".")
 
 
     if linear_fit:

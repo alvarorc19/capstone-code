@@ -29,6 +29,19 @@ def compute_average_energy(directory:pathlib.Path) -> pe.Obs:
     obs.gamma_method()
     return obs
 
+def compute_normalised_energy(directory:pathlib.Path) -> pe.Obs:
+    energy_array = import_observable(directory, "energy")
+    length = import_physical_parameter(directory, "L")
+    dim = import_physical_parameter(directory, "dimension")
+    N = length ** dim
+    J = import_physical_parameter(directory, "J")
+    obs = pe.Obs([energy_array], ["energy"])
+    norm_obs = obs / (J * N)
+
+    norm_obs.gamma_method()
+    return norm_obs
+
+
 # kT^2C_v = <H^2> - <H>^2 
 def compute_specific_heat(directory:pathlib.Path) -> pe.Obs:
     energy_array = import_observable(directory, "energy") 
