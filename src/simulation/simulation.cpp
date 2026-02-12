@@ -59,7 +59,7 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
     parameters.total_sweeps = static_cast<size_t>(tbl["simulation_settings"]["total_sweeps"].value_or<int64_t>(0));
     parameters.recording_sweeps = static_cast<size_t>(tbl["simulation_settings"]["recording_sweeps"].value_or<int64_t>(0));
     parameters.record_lattice = tbl["simulation_settings"]["record_lattice"].value_or<bool>(false);
-    parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false);
+    /* parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false); */
     parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);
     parameters.save_last_state = tbl["simulation_settings"]["save_last_state"].value_or<bool>(false);
 }
@@ -219,9 +219,6 @@ void Simulation::initialise_writing() {
         HighFive::DataSpace lattice_space(current_dims, max_dims);
         HighFive::DataSetCreateProps props;
         props.add(HighFive::Chunking(chunk_dims));
-        HighFive::DataSpace lattice_space(current_dims, max_dims);
-        HighFive::DataSetCreateProps props;
-        props.add(HighFive::Chunking(chunk_dims));
 
         if (parameters.model_type == "xy") {
             parameters.lattice_set = std::make_unique<HighFive::DataSet>(
@@ -267,9 +264,9 @@ void Simulation::initialise_writing() {
         }
     }
 
-    if (parameters.record_correlation_length){
-        observables.correlation_length.reserve(parameters.recording_sweep);
-    }
+    /* if (parameters.record_correlation_length){ */
+    /*     observables.correlation_length.reserve(parameters.recording_sweep); */
+    /* } */
 
     // TODO
     // if (parameters.record_correlation_function){
@@ -383,7 +380,7 @@ dvec Simulation::extract_double_vector_toml(const toml::array& array) {
 void Simulation::update_observables() {
     observables.energy_array.emplace_back(model->compute_total_energy());
     observables.magnetisation_array.emplace_back(model->compute_magnetisation());
-    observables.correlation_length.emplace_back(model->compute_correlation_length());
+    /* observables.correlation_length.emplace_back(model->compute_correlation_length()); */
 }
 
 void Simulation::write_lattice(int time) {
