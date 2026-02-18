@@ -48,7 +48,7 @@ creates a folder under `projects` with the name given and the parameters specifi
 #### Build and run
 create and go to the build directory, or run this for short:
 ```zsh
-$ mkdir very_long_folder_name && cd $_
+$ mkdir build && cd $_
 ```
 Then you shall follow the usual cmake commands
 ```zsh
