@@ -40,23 +40,23 @@ If you are using a conda environment the hdf5 library can be installed from ther
 
 ### Running the programme
 Once you have all the dependencies installed you shall create a system configuration. To do this you copy and rename `new_project_sample.py`to `new_project.py` and fill all of your desired settings. Running the programme,
-```bash
+```zsh
 $ python3 utils/new_project.py
 ```
 creates a folder under `projects` with the name given and the parameters specified.
 
 #### Build and run
 create and go to the build directory, or run this for short:
-```bash
+```zsh
 $ mkdir very_long_folder_name && cd $_
 ```
 Then you shall follow the usual cmake commands
-```bash
+```zsh
 $ cmake .. && make
 ```
 
 Once you have created the executable, you run it with the following command:
-```bash
+```zsh
 $ ./run_simulation -p PROJECT_FOLDER -m MODEL -j JOBS
 ```
 The parameters that one can specify are:
