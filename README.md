@@ -4,8 +4,8 @@
 
 ### Installation NixOS
 If you are using a NixOS systems you just need to execute
-```nix
-nix develop .#exec -c zsh
+```zsh
+$ nix develop .#exec -c zsh
 ```
 This will drop you in a nix shell with all the dependencies necessary to develop and run the code!
 You can skip
