@@ -18,6 +18,7 @@
         ...
       }: {
         packages.default = pkgs.callPackage ./default.nix {};
+        # My shell / development
         devShells.default = pkgs.mkShell {
           name = "c++ with pixi";
           nativeBuildInputs = with pkgs; [
@@ -46,10 +47,43 @@
           shellHook = ''
             echo "pixi shell and c++ environment initialised"
             clear
-            exec pixi shell
-            exec zsh
+            exec pixi shell & nvim todo.md
           '';
         };
+
+        # Execution development shell
+        devShells.exec = pkgs.mkShell {
+          name = "c++ with pixi";
+          nativeBuildInputs = with pkgs; [
+            # clang_20
+            gcc_multi
+          ];
+          buildInputs = with pkgs; [
+            ffmpeg # for video generation
+            pyright
+            clang-tools
+            # hdfview
+          ];
+          packages = with pkgs; [
+            # boost
+            doxygen
+            tomlplusplus
+            hdf5-cpp
+            highfive
+            catch2
+            cmake
+            graphviz
+            pixi
+            # llvmPackages_20.openmp
+          ];
+          shellHook = ''
+            echo "pixi shell and c++ environment initialised"
+            clear
+            exec pixi shell
+          '';
+        };
+      };
+    };
       };
     };
 }
