@@ -20,7 +20,7 @@ To run the C++ simulation you will need the following requirements:
 - cmake
 - hdf5
 
-To generate the configuration you will need:
+To generate the documentation you will need:
 - doxygen
 - Graphviz
 
