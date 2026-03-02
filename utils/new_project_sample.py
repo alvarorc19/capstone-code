@@ -144,7 +144,7 @@ elif (temp_array and length_array):
     direc.mkdir(parents = True, exist_ok = False)
     for k in range(remaining):
         t, l = combinations[num_sub_direc + k]
-        parameters["physical_settings"]["L"] = l.item(rc
+        parameters["physical_settings"]["L"] = l.item()
         parameters["physical_settings"]["temperature"] = t.item()
 
         config_path = direc / f"parameter-config-{k}"
