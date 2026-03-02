@@ -25,6 +25,7 @@ plt.rcParams.update({'font.size':14})
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
     project_name = "test2000"
+    is_deep = False
     # parameter_combination = 2
     project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
     # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
@@ -52,7 +53,7 @@ def main():
         r"Specific Heat per spin $c_H$"
     ]
 
-    do_order_parameter_plot(project_path)
+    do_order_parameter_plot(project_path, is_deep)
 
     # Create plots
     for observable, observables_title in zip(observables, observables_titles):
@@ -60,6 +61,7 @@ def main():
             observable = observable,
             observable_title = observables_title,
             directory = project_path, 
+            is_deep = is_deep,
             x_data = "temperature",
             log_plot = False,
             log_fit = False,
@@ -67,7 +69,7 @@ def main():
         )
 
 
-    # do_finite_size_analysis_susceptibility(project_path)
+    # do_finite_size_analysis_susceptibility(project_path, is_deep)
 
     # Critical exponents
     saving_path = project_path.parent.parent / "analyze" /"output"/ "critical_exponents"

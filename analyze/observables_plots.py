@@ -51,10 +51,18 @@ def _find_observable_function(observable:str):
     }
     return observable_functions[observable]
 
-def do_finite_size_analysis_susceptibility(directory:pathlib.Path):
+def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool = False):
     observable = "susceptibility"
     saving_path = directory.parent.parent / "analyze" / "output"/"vid_dump"
-    params = [x for x in directory.iterdir() if x.is_dir()]
+    if is_deep:
+        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        params = []
+        for dir in sub_dir.iterdir():
+            if dir.is_dir():
+                params.append(dir)
+    else:
+        params = [x for x in directory.iterdir() if x.is_dir()]
+
     temp_array = np.array([])
     length_array = np.array([])
     observable_obs_array = np.array([])
@@ -219,6 +227,7 @@ def do_observable_plot(
         observable:str,
         observable_title:str,
         directory:pathlib.Path, 
+        is_deep:bool = False,
         x_data:str = "temperature",
         log_plot:bool = False,
         log_fit:bool = False,
@@ -227,7 +236,16 @@ def do_observable_plot(
 
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     plt.tight_layout()
-    params = [x for x in directory.iterdir() if x.is_dir()]
+
+    if is_deep:
+        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        params = []
+        for dir in sub_dir.iterdir():
+            if dir.is_dir():
+                params.append(dir)
+    else:
+        params = [x for x in directory.iterdir() if x.is_dir()]
+
     temp_array = np.array([])
     length_array = np.array([])
     observable_array = np.array([])
@@ -413,14 +431,21 @@ def _add_format_plot(
 
     return axs
 
-def do_order_parameter_plot(directory:pathlib.Path):
+def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False):
     # Add Obs crap
 
     plt.tight_layout()
 
     saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
     saving_path.mkdir(parents = True, exist_ok = True)
-    params = [x for x in directory.iterdir() if x.is_dir()]
+    if is_deep:
+        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        params = []
+        for dir in sub_dir.iterdir():
+            if dir.is_dir():
+                params.append(dir)
+    else:
+        params = [x for x in directory.iterdir() if x.is_dir()]
 
 
     for direc in params:
