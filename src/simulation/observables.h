@@ -20,7 +20,8 @@ using dvec = std::vector<double>;
 
 struct Observables {
     dvec energy_array;
-    dvec magnetisation_array;
+    dvec x_magnetisation;
+    dvec y_magnetisation;
     double susceptibility;
     double correlation_length;
     dvec correlation_function_array;

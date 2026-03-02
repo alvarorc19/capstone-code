@@ -124,16 +124,28 @@ class Simulation {
         void write_lattice(int time);
 
         /**
-         * @brief writes the observables into the h5 file after the run from the Observables object
+         * @brief writes the observables into the h5 file after the run from the Observables object for the batch, currently it is $2^9$ to have easy bitwise 
+         *
+         * @param start int position from which to start writing
          * 
          */
-        void write_observables();
+        void write_observables_after_loop(hsize_t start);
+
+        /**
+         * @brief writes the observables into the h5 file for the last batch of steps.
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_observables_final(hsize_t start, dvec energy, dvec x_magnetisation,dvec y_magnetisation);
 
         /**
          * @brief Updates the observables stored in the Observables object
+         *
+         * @param position int gets the position of the array to save observable
          * 
          */
-        void update_observables();
+        void update_observables(int position);
 };
 
 #endif

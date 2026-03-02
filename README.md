@@ -1,40 +1,70 @@
 # Characterisation of the XY model
 
-## Ising model
-Defined by Hamiltonian\
-$$H = E = -J \sum_{\langle i j \rangle}s_i s_j - h \sum_i s_i.$$ 
+## How to use
 
-## Simulation steps
-1. Make a parser and have hold the relevant data for the simulation
-2. Initialise lattice
-3. Run simulation
-    i. Measure current state
-    ii. Perform algorithm
-    iii. Write new state (tell how verbose in an option, also log)
-    iv. Compute observables or measurables (also tell if do this in config)
-4. Quit simulation and end program
+### Installation NixOS
+If you are using a NixOS systems you just need to execute
+```zsh
+$ nix develop .#exec -c zsh
+```
+This will drop you in a nix shell with all the dependencies necessary to develop and run the code!
+You can skip to [running the simulation](#running-the-programme).
 
-## Issues or code choices to address
-- Make one lattice class?
-- For the models make a general model class and have the other ones inherit?
-    - Could make an $O(1)$ case and then an $O(n)$ for $n\geq2$ because of the implementation and usage of vectors
-- Think how to do the magnetic field, difference between $O(1)$ and $O(2)$. Make sure to include assertions. 
-- How am I going to store the values for the XY model?
-  - Have an array way bigger s.t. they are next to each other?
-  - Have it represented as a complex number?
-  - Have only the number and then compute the sine and cosine every time?
-    - I feel like this one is non-efficient!
-    - However, if Hamiltonian is w.r.t. angle...
 
-## TODO
-- Implement table of neighbours in 2D
-    - Use the 1d array that where for an index i, for 2d neighbours are stored at $4\dot i + \textrm{dir}$, where dir is direction and can be $[0,3]$, up, down, right, left. The index i is defined as index $= i\dot L +j$ for a position in lattice $(i,j)$.
-- Change computation of energy 
-    - Currently $\Delta E = E(s_f)-E(s_i)$, for a spin flip $s_i \rightarrow s_f$ change it to a more general scenario for the Potts' model (might need change for the XY model due to dot product)\
-    $$\Delta E = -J (s_f-s_i)\sum_{j}s_j - h (s_f-s_i).$$ \
-    Where the sum over $j$ is over the neighbours
-- Add Hamiltonian for Potts' model
-- Add Hamiltonian for XY model
-- Code cluster algorithm
-- Make parser that reads from the terminal and then from a toml file
-    - This is in conjunction to creating a folder where the hdf5 file would be dumped as well as the log file
+### Installation non-NixOS
+
+#### Requirements
+
+To run the C++ simulation you will need the following requirements:
+- gcc or clang with 
+- cmake
+- hdf5
+
+To generate the documentation you will need:
+- doxygen
+- Graphviz
+
+To generate mp4 videos you will need:
+- ffpmeg
+
+In order to generate results Python is used and the whole system is built with the **pixi** system in mind, however if not in availability, the python packages to be installed using pip are:
+- Jupyter
+- Numpy
+- Matplotlib
+- Pandas
+- toml
+- pyerrors
+- opencv
+
+If you are using a conda environment the hdf5 library can be installed from there similarly to the case done with pixi.
+
+### Running the programme
+Once you have all the dependencies installed you shall create a system configuration. To do this you copy and rename `new_project_sample.py`to `new_project.py` and fill all of your desired settings. Running the programme,
+```zsh
+$ python3 utils/new_project.py
+```
+creates a folder under `projects` with the name given and the parameters specified.
+
+#### Build and run
+create and go to the build directory, or run this for short:
+```zsh
+$ mkdir build && cd $_
+```
+Then you shall follow the usual cmake commands
+```zsh
+$ cmake .. && make
+```
+
+Once you have created the executable, you run it with the following command:
+```zsh
+$ ./run_simulation -p PROJECT_FOLDER -m MODEL -j JOBS
+```
+The parameters that one can specify are:
+- `-p`: This is the project where the programme is going to get the information. It gets as path the root directory so you just need to specify the project folder and the name of project. For example: `projects/demo`.
+- `-m`: This gets the model that the system is going to use to perform the Monte Carlo simulations. The options implemented are:
+    - `xy`: The XY model
+    - `potts`: The Potts model
+    - `ising`: The Ising model
+- `-j`: Indicates the number of cores to be used in the simulation, managed by OpenMP.
+
+## Development guide(TODO)

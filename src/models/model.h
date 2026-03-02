@@ -94,7 +94,7 @@ class Model: public ModelBase{
          * @param[in] time 
          */
 
-        void write_lattice(HighFive::DataSet* lattice_set, int time) override;
+        void write_lattice(HighFive::DataSet* lattice_set, hsize_t time, hsize_t N) override;
 
         // Virtual functions
         /**
@@ -115,9 +115,9 @@ class Model: public ModelBase{
          * @brief computes the spin in the magnetic term of the hamiltonian for a given dimension
          * 
          * @param dim dimension along which to compute the magnetic term
-         * @return T total spin
+         * @return double total spin
          */
-        virtual T compute_spin_magnetic_term(int dim) = 0;
+        virtual double compute_spin_magnetic_term(int dim) = 0;
 
         /**
          * @brief computes the spin in the magnetic term of the hamiltonian for a single dimension model
@@ -134,8 +134,8 @@ class Model: public ModelBase{
         virtual void change_spin_randomly(ivec indices) = 0;
     // TODO implement this
         void change_spin(int index, double spin) override {}
-
-        void cluster_flip_neighbours(int index, double direction, double angle_flip, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited) override{};
+        void flip_spin(int index, double angle) override {}
+        void cluster_flip_neighbours(int index, double direction, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited, int lattice_dim) override{}
 
 };
 

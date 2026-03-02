@@ -30,6 +30,8 @@
 
 struct SimulationParameters {
     std::unique_ptr<HighFive::DataSet> lattice_set;
+    std::unique_ptr<HighFive::DataSet> magnetisation_set;
+    std::unique_ptr<HighFive::DataSet> energy_set;
     std::string model_type;
     std::filesystem::path project_folder_path;
     int L;
@@ -38,16 +40,13 @@ struct SimulationParameters {
     double T;
     double beta;
     double J;
-    int potts_q;
-    int time_steps;
-    double H;
-    std::vector<double> vec_H;
+    int potts_q = 1;
+    // double H;
+    // std::vector<double> vec_H;
     // Always records the last X steps
     size_t total_sweeps;
-    size_t recording_sweeps;
-    bool record_lattice = false;
-    bool record_correlation_length = false;
-    bool record_correlation_function = false;
+    // bool record_correlation_length = false;
+    // bool record_correlation_function = false;
     bool save_last_state = false;
 };
 
