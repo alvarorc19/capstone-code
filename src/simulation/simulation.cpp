@@ -262,35 +262,6 @@ void Simulation::initialise_writing() {
         )
     );
 
-    // Create observables datasets
-    HighFive::DataSpace magnetisation_space({parameters.total_sweeps, 2});
-    chunk_dims = {512, 2};
-    HighFive::DataSetCreateProps magnetisation_props;
-    magnetisation_props.add(HighFive::Chunking(chunk_dims));
-    parameters.magnetisation_set = std::make_unique<HighFive::DataSet>(
-        file->createDataSet<double>(
-            "observables/magnetisation",
-            magnetisation_space,
-            magnetisation_props
-        )
-    );
->>>>>>> e5a4eb5d64e974f5624453dd48006ec27d4dde84
-
-    observables.x_magnetisation.resize(512);
-    observables.y_magnetisation.resize(512);
-
-    HighFive::DataSpace energy_space({parameters.total_sweeps});
-    chunk_dims = {512};
-    HighFive::DataSetCreateProps energy_props;
-    energy_props.add(HighFive::Chunking(chunk_dims));
-    parameters.energy_set = std::make_unique<HighFive::DataSet>(
-        file->createDataSet<double>(
-            "observables/energy",
-            energy_space,
-            energy_props
-        )
-    );
-
     observables.energy_array.resize(512);
 
     // // TODO
