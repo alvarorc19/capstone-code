@@ -40,6 +40,7 @@
             highfive
             catch2
             cmake
+            h5glance
             graphviz
             pixi
             # llvmPackages_20.openmp

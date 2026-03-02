@@ -51,7 +51,8 @@ double IsingModel::compute_total_energy() {
         neigh_energy += compute_spin_neighbours_term(i);
     }
     
-    total_energy = -J * 0.5 * neigh_energy - H * magnetic_energy;
+    // total_energy = -J * 0.5 * neigh_energy - H * magnetic_energy;
+    total_energy = -J * 0.5 * neigh_energy;
     return total_energy;
 }
 
@@ -72,7 +73,8 @@ double IsingModel::compute_energy_diff_flip() {
     double energy_diff=0;
     ivec random_indices = rng::random_int_array(rng::engine, lattice_obj->get_lattice_dim(), 0, lattice_obj->get_lattice_length() - 1);
     int spin = lattice_obj->get_lattice_site(random_indices);
-    energy_diff = 2*J * spin * compute_spin_neighbours_term(random_indices) + 2*H*spin;
+    // energy_diff = 2*J * spin * compute_spin_neighbours_term(random_indices) + 2*H*spin;
+    energy_diff = 2*J * spin * compute_spin_neighbours_term(random_indices);
     change_spin_randomly(random_indices);
 
     return energy_diff;

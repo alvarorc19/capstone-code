@@ -35,10 +35,10 @@ include_directories(${OpenMP_CXX_INCLUDE_DIRS})
 
 FetchContent_Declare(
         highfive
-	#        GIT_REPOSITORY https://github.com/highfive-devs/highfive.git
-        GIT_REPOSITORY git@github.com:BlueBrain/HighFive.git
+        GIT_REPOSITORY https://github.com/highfive-devs/highfive.git
+        # GIT_REPOSITORY git@github.com:BlueBrain/HighFive.git
         GIT_SHALLOW ON
-        GIT_TAG v2.10.1
+        GIT_TAG v3.3.0
 )
 FetchContent_GetProperties(highfive)
 FetchContent_MakeAvailable(highfive)

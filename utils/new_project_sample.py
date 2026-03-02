@@ -8,12 +8,11 @@ import json
 project_folder = "./projects"
 project_name = "test"
 
-total_sweeps = 300
-recording_sweeps = 100
-L = 10
+total_sweeps = 1000
+L = 100
 dim = 2
 N = L**dim
-temp = 0.7
+temp = 0.2
 
 def get_git_hash():
     git_hash = subprocess.check_output(
@@ -28,23 +27,21 @@ parameters = {
         "L":L,
         "dimension" : dim,
         "J" : 1,
-        "potts_q" : 3,
-        "H" : 1.0,
-        "vec_H" : [0.0,0.0,2.0],
+        # "potts_q" : 3,
+        # "H" : 1.0,
+        # "vec_H" : [0.0,0.0,2.0],
     },
     "simulation_settings" : {
         "total_sweeps" : total_sweeps,
-        "recording_sweeps" : recording_sweeps,
-        "record_lattice": True,
-        "record_correlation_length" : False,
-        "record_correlation_function" : False,
+        # "record_correlation_length" : False,
+        # "record_correlation_function" : False,
         "save_last_state": False,
     },
     "git_hash":get_git_hash(),
     "seed":42
 }
 base = Path(project_folder) / project_name
-base.mkdir(parents=True, exist_ok=True)
+base.mkdir(parents=True, exist_ok=False)
 print("Base directory: ", base)
 
 seed_number = 0
@@ -54,7 +51,7 @@ seed_number = 0
 temp_array = []
 
 # Varius sizes
-# length_array = np.linspace(10, 1000, 20, dtype=int).tolist()
+# length_array = np.linspace(10, 1000, 5, dtype=int).tolist()
 length_array = []
 
 global_parameters = copy.deepcopy(parameters)

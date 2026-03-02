@@ -49,19 +49,7 @@ double Model<T>::compute_heat_capacity(std::vector<T> energies) {
 }
 
 template <typename T>
-void Model<T>::write_lattice(HighFive::DataSet* lattice_set, int time) {
-    std::vector<T> lattice = lattice_obj->get_lattice();
-    size_t N = lattice_obj->get_particle_num();
-    std::vector<size_t> new_dims = {static_cast<size_t>(time + 1), static_cast<size_t>(N)};
-    lattice_set->resize(new_dims);
-
-    // Generate arrays to select new stuff
-    std::vector<size_t> offset = {static_cast<size_t>(time), 0};
-    std::vector<size_t> extent = {1, static_cast<size_t>(N)}; 
-
-    // Put lattice in vector
-    std::vector<std::vector<T>> data_to_write = {lattice}; 
-
-    // Write the 1xN slice (new row) to the dataset
-    lattice_set->select(offset, extent).write(data_to_write);
+void Model<T>::write_lattice(HighFive::DataSet* lattice_set, hsize_t time, hsize_t N) {
+    const std::vector<T>& lattice = lattice_obj->get_lattice();
+    lattice_set->select({time, 0},{1,N}).write_raw(lattice.data(), HighFive::AtomicType<double>{});
 }

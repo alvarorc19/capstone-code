@@ -50,118 +50,117 @@ void Simulation::parse_parameters(std::filesystem::path project_folder_path, std
     parameters.T = tbl["physical_settings"]["temperature"].value_or<double>(0.0);
     parameters.beta = 1 / parameters.T;
     parameters.J = tbl["physical_settings"]["J"].value_or<double>(0.0);
-    parameters.potts_q = static_cast<int>(tbl["physical_settings"]["potts_q"].value_or<int64_t>(0));
-    parameters.H = tbl["physical_settings"]["H"].value_or<double>(0.0);
-
-    parameters.vec_H = extract_double_vector_toml(*tbl["physical_settings"]["vec_H"].as_array());
+    // parameters.potts_q = static_cast<int>(tbl["physical_settings"]["potts_q"].value_or<int64_t>(0));
+    // parameters.H = tbl["physical_settings"]["H"].value_or<double>(0.0);
+    //
+    // parameters.vec_H = extract_double_vector_toml(*tbl["physical_settings"]["vec_H"].as_array());
 
     parameters.model_type = model_type;
     parameters.total_sweeps = static_cast<size_t>(tbl["simulation_settings"]["total_sweeps"].value_or<int64_t>(0));
-    parameters.recording_sweeps = static_cast<size_t>(tbl["simulation_settings"]["recording_sweeps"].value_or<int64_t>(0));
-    parameters.record_lattice = tbl["simulation_settings"]["record_lattice"].value_or<bool>(false);
-    parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false);
-    parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);
+    // parameters.record_correlation_length = tbl["simulation_settings"]["record_correlation_length"].value_or<bool>(false);
+    // parameters.record_correlation_function = tbl["simulation_settings"]["record_correlation_function"].value_or<bool>(false);
     parameters.save_last_state = tbl["simulation_settings"]["save_last_state"].value_or<bool>(false);
 }
 
 void Simulation::run() {
 
+    int num_loops = parameters.total_sweeps >> 9;
+    int modulo = parameters.total_sweeps % 512;
+
+    if (modulo == 0){
+        num_loops -= 1;
+        modulo += 512;
+    }
+
     visited.assign(parameters.N, 0);
     cluster_stack.reserve(parameters.N);
+    
     // Start timer
     const auto start{std::chrono::steady_clock::now()};
 
     do_cluster_sweep();
+    update_observables(0);
+    time_step++;
 
     // End timer
     const auto finish{std::chrono::steady_clock::now()};
     const std::chrono::duration<double> elapsed_seconds{finish - start};
-    time_step++;
 
-    #pragma omp critical
+    #pragma omp critical(io)
     {
         std::cout << "One sweep took " << elapsed_seconds.count() << " s\n";
         std::cout << "Expected execution time (not accounting for writing) =  " << 
             elapsed_seconds.count() * parameters.total_sweeps << " s " << std::endl;
     }
 
-    for(int i = 1; i < parameters.total_sweeps - parameters.recording_sweeps; i++){
-        // do_metropolis_sweep();
+    for(int j = 1; j < 512; j++){
         do_cluster_sweep();
+        update_observables(j);
         time_step++;
-        // #pragma omp critical
-        // {
-        //     std::cout << "Thermalisation step temp = " << parameters.T <<" = " << i <<"\n";
-        // }
     }
-    const auto therm{std::chrono::steady_clock::now()};
-    const std::chrono::duration<double> therm_seconds{therm - start};
-    #pragma omp critical
+
+    #pragma omp critical (HDF5)
     {
-        std::cout << "Thermalisation finished, took " << therm_seconds.count() <<"s"<<std::endl;
+        write_observables_after_loop(0);
     }
 
-    for(int i = 0; i < parameters.recording_sweeps; i++){
-        //time_step = do_metropolis_recording_sweep(time_step);
-        //write_lattice(i);
-        if (parameters.record_lattice) {
-                // do_metropolis_recording_sweep();
-                // time_step++;
-                // write_lattice(i);
+    // End timer
+    const auto finish512{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> elapsed_seconds512{finish512 - start};
 
-                // Recording sweep records every step instead of every sweep (MCS)
-                // do_cluster_recording_sweep();
-                do_cluster_sweep();
-                update_observables();
-                time_step++;
-                #pragma omp critical (HDF5)
-                {
-                write_lattice(i);
-                }
-                // #pragma omp critical
-                // {
-                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-                // }
+    #pragma omp critical(io)
+    {
+        std::cout << "One loop of 512 sweeps took " << elapsed_seconds512.count() <<"s" << "\n";
+        std::cout << "Need to do " << num_loops << " loops" << std::endl;
+    }
+
+    for (int i = 1; i < num_loops; i++){
+        for(int j = 0; j < 512; j++){
+            do_cluster_sweep();
+            update_observables(j);
+            time_step++;
         }
-        else if (not parameters.record_lattice) {
-                // do_metropolis_recording_sweep();
-                
-                // Recording sweep records every step instead of every sweep (MCS)
-                // do_cluster_recording_sweep();
-                do_cluster_sweep();
-                update_observables();
-                time_step++;
-                // #pragma omp critical
-                // {
-                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-                // }
-        }
-        else {
-                // do_metropolis_recording_sweep();
-                
-                // Recording sweep records every step instead of every sweep (MCS)
-                // do_cluster_recording_sweep();
-                do_cluster_sweep();
-                update_observables();
-                time_step++;
 
-                // #pragma omp critical
-                // {
-                // std::cout << "step " << i << " out of " << parameters.recording_steps << "\n";
-                // }
-
+        #pragma omp critical (HDF5)
+        {
+            write_observables_after_loop(i << 9);
         }
     }
 
-    // TODO
-    // if (parameters.save_last_state){
-    //     HighFive::DataSet last_state = file->createDataSet("last_state", );
-    //
-    // }
+    dvec final_x_magnetisation;
+    dvec final_y_magnetisation;
+    dvec final_energy;
+    final_x_magnetisation.reserve(modulo);
+    final_y_magnetisation.reserve(modulo);
+    final_energy.reserve(modulo);
 
-    write_observables();
-    file->flush();
-    #pragma omp critical
+    for (int i = 0; i < modulo - 1; i++){
+        do_cluster_sweep();
+        final_energy.emplace_back(model->compute_total_energy());
+        final_x_magnetisation.emplace_back(model->compute_spin_magnetic_term(0));
+        final_y_magnetisation.emplace_back(model->compute_spin_magnetic_term(1));
+        time_step++;
+    }
+
+    // For a whole sweep record the lattice
+    for (int i = 0; i < parameters.N ; i++){
+        do_cluster_step();
+        #pragma omp critical(HDF5)
+        {
+            write_lattice(i);
+        }
+    }
+    final_energy.emplace_back(model->compute_total_energy());
+    final_x_magnetisation.emplace_back(model->compute_spin_magnetic_term(0));
+    final_y_magnetisation.emplace_back(model->compute_spin_magnetic_term(1));
+    time_step++;
+    #pragma omp critical (HDF5)
+    {
+        write_observables_final(num_loops << 9, final_energy, final_x_magnetisation,final_y_magnetisation);
+        file->flush();
+    }
+
+    #pragma omp critical(io)
     {
         std::cout << "Finished run for " << parameters.project_folder_path.filename() << "\n";
     }
@@ -173,7 +172,7 @@ void Simulation::initialise_model() {
         model = std::make_unique<IsingModel>(
             parameters.T,
             parameters.J,
-            parameters.H,
+            // parameters.H,
             parameters.dim,
             parameters.L
         );
@@ -182,8 +181,8 @@ void Simulation::initialise_model() {
         model = std::make_unique<PottsModel>(
             parameters.T,
             parameters.J,
-            parameters.vec_H,
-            parameters.H,
+            // parameters.vec_H,
+            // parameters.H,
             parameters.dim,
             parameters.L,
             parameters.potts_q
@@ -193,8 +192,8 @@ void Simulation::initialise_model() {
         model = std::make_unique<XYModel>(
             parameters.T,
             parameters.J,
-            parameters.vec_H,
-            parameters.H,
+            // parameters.vec_H,
+            // parameters.H,
             parameters.dim,
             parameters.L
         );
@@ -207,79 +206,69 @@ void Simulation::initialise_model() {
 void Simulation::initialise_writing() {
     std::filesystem::path filename = parameters.project_folder_path / std::filesystem::path("results.h5");
     this->file = std::make_unique<HighFive::File>(filename.string(), HighFive::File::Truncate);
+    
+    // Lattice dataset, stores only last sweep I would do, last N iterations.
+    HighFive::DataSpace lattice_space({parameters.N, parameters.N});
 
-    if (parameters.record_lattice){
-        std::vector<size_t> current_dims = {0, parameters.N}; 
-        std::vector<size_t> max_dims = {HighFive::DataSpace::UNLIMITED, parameters.N}; 
-        
-        // Define chunks, how data is stored
-        size_t chunk_rows = std::min(parameters.recording_sweeps, static_cast<size_t>(375));
-        std::vector<hsize_t> chunk_dims = {chunk_rows, parameters.N};
+    // Define chunks, how data is stored
+    std::vector<hsize_t> chunk_dims = {30, parameters.N};
+    HighFive::DataSetCreateProps lattice_props;
+    lattice_props.add(HighFive::Chunking(chunk_dims));
 
-        HighFive::DataSpace lattice_space(current_dims, max_dims);
-        HighFive::DataSetCreateProps props;
-        props.add(HighFive::Chunking(chunk_dims));
-        HighFive::DataSpace lattice_space(current_dims, max_dims);
-        HighFive::DataSetCreateProps props;
-        props.add(HighFive::Chunking(chunk_dims));
-
-        if (parameters.model_type == "xy") {
-            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-                file->createDataSet<double>(
-                    "lattice",
-                    lattice_space,
-                    props
-                )
-            );
-        }
-        else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
-            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-                file->createDataSet<int>(
-                    "lattice",
-                    lattice_space,
-                    props
-                )
-            );
-        }
-        else { 
-            throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
-        }
-        if (parameters.model_type == "xy") {
-            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-                file->createDataSet<double>(
-                    "lattice",
-                    lattice_space,
-                    props
-                )
-            );
-        }
-        else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
-            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-                file->createDataSet<int>(
-                    "lattice",
-                    lattice_space,
-                    props
-                )
-            );
-        }
-        else { 
-            throw std::invalid_argument("There was an oopsie when there shouldn't, I do not know how you got here");
-        }
+    if (parameters.model_type == "xy") {
+        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+            file->createDataSet<double>(
+                "lattice",
+                lattice_space,
+                lattice_props
+            )
+        );
+    }
+    else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
+        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+            file->createDataSet<int>(
+                "lattice",
+                lattice_space,
+                lattice_props
+            )
+        );
     }
 
-    if (parameters.record_correlation_length){
-        observables.correlation_length.reserve(parameters.recording_sweep);
-    }
+    // Create observables datasets
+    HighFive::DataSpace magnetisation_space({parameters.total_sweeps, 2});
+    chunk_dims = {512, 2};
+    HighFive::DataSetCreateProps magnetisation_props;
+    magnetisation_props.add(HighFive::Chunking(chunk_dims));
+    parameters.magnetisation_set = std::make_unique<HighFive::DataSet>(
+        file->createDataSet<double>(
+            "observables/magnetisation",
+            magnetisation_space,
+            magnetisation_props
+        )
+    );
 
-    // TODO
-    // if (parameters.record_correlation_function){
+    observables.x_magnetisation.resize(512);
+    observables.y_magnetisation.resize(512);
+
+    HighFive::DataSpace energy_space({parameters.total_sweeps});
+    chunk_dims = {512};
+    HighFive::DataSetCreateProps energy_props;
+    energy_props.add(HighFive::Chunking(chunk_dims));
+    parameters.energy_set = std::make_unique<HighFive::DataSet>(
+        file->createDataSet<double>(
+            "observables/energy",
+            energy_space,
+            energy_props
+        )
+    );
+
+    observables.energy_array.resize(512);
+
+    // // TODO
+    // if (parameters.renormalization) {
     //
     // }
 
-    
-    // Beware with the space reserved
-    observables.energy_array.reserve(parameters.recording_sweeps);
-    observables.magnetisation_array.reserve(parameters.recording_sweeps);
 }
 
 void Simulation::do_metropolis_step() {
@@ -302,44 +291,47 @@ void Simulation::do_metropolis_sweep(){
 }
 
 void Simulation::do_metropolis_recording_sweep() {
-    for (int i = 0; i < parameters.N; i++){
-        do_metropolis_step();
-        update_observables();
-    }
+    // for (int i = 0; i < parameters.N; i++){
+    //     do_metropolis_step();
+    //     update_observables();
+    // }
 }
 
 /**
 * Here we need to normalise the MCS steps things (or not)
 * I can do this like this at the moment and leave it.
 *
-* TODO Normalise the MCS,
-* 
 * Total MCS = {\sum (size of each cluster)} / number particles
 */
 void Simulation::do_cluster_step(){
     // Get the random stuff
-    int random_index = rng::random_int_number(rng::engine, 0, parameters.N-1);
-    double angle_r = rng::random_angle(rng::engine);
-    double angle_flip = rng::random_angle(rng::engine);
-    model->change_spin(random_index, angle_flip);
+    int random_index = rng::random_int_number(rng::engine, 0, parameters.N - 1);
+    double angle_r = rng::random_angle(rng::engine) / 2;
+    // Cannot do this yet
+    model->flip_spin(random_index, angle_r);
     
     // Make stack to store indices used
     cluster_stack.clear();
     cluster_stack.emplace_back(random_index);
     std::fill(visited.begin(), visited.end(), 0);
-    cluster_stack.reserve(parameters.N);
+    // cluster_stack.reserve(parameters.N);
 
-    int current_index;
     spins_flipped++;
 
     while(!cluster_stack.empty()){
-        current_index = cluster_stack.back();
+        int current_index = cluster_stack.back();
         cluster_stack.pop_back();
-        model->cluster_flip_neighbours(current_index, angle_r,angle_flip, cluster_stack, spins_flipped, visited);
+        model->cluster_flip_neighbours(
+            current_index,
+            angle_r,
+            cluster_stack,
+            spins_flipped, 
+            visited,
+            parameters.dim
+        );
         
     } 
 }
-
 
 void Simulation::do_cluster_sweep(){
     spins_flipped = 0;
@@ -347,15 +339,6 @@ void Simulation::do_cluster_sweep(){
             do_cluster_step();
         }
 }
-
-void Simulation::do_cluster_recording_sweep(){
-    for (int i = 0; i < parameters.N; i++){
-        do_cluster_step();
-        update_observables();
-        write_lattice(i+time_step);
-}
-}
-
 
 ivec Simulation::extract_int_vector_toml(const toml::array & array){
     ivec int_vector;
@@ -380,17 +363,29 @@ dvec Simulation::extract_double_vector_toml(const toml::array& array) {
     return double_vector;
 }
 
-void Simulation::update_observables() {
-    observables.energy_array.emplace_back(model->compute_total_energy());
-    observables.magnetisation_array.emplace_back(model->compute_magnetisation());
-    observables.correlation_length.emplace_back(model->compute_correlation_length());
+void Simulation::update_observables(int position) {
+    observables.energy_array[position] = model->compute_total_energy();
+    observables.x_magnetisation[position] = model->compute_spin_magnetic_term(0);
+    observables.y_magnetisation[position] = model->compute_spin_magnetic_term(1);
 }
 
 void Simulation::write_lattice(int time) {
-    model->write_lattice(parameters.lattice_set.get(),time);
+    model->write_lattice(parameters.lattice_set.get(),time, parameters.N);
 }
 
-void Simulation::write_observables() {
-    HighFive::DataSet magnetisation_dataset = file->createDataSet("observables/magnetisation", observables.magnetisation_array);
-    HighFive::DataSet energy_dataset = file->createDataSet("observables/energy", observables.energy_array);
+void Simulation::write_observables_after_loop(hsize_t start) {
+    assert(observables.energy_array.size() == 512 && "Energy array needs to be 512");
+    assert(observables.x_magnetisation.size() == 512 && "X_Magnetisation array needs to be 512");
+    assert(observables.y_magnetisation.size() == 512 && "Y_Magnetisation array needs to be 512");
+    parameters.magnetisation_set->select({start, 0}, {512, 1}).write_raw(observables.x_magnetisation.data(), HighFive::AtomicType<double>{});
+    parameters.magnetisation_set->select({start, 1}, {512, 1}).write_raw(observables.y_magnetisation.data(), HighFive::AtomicType<double>{});;
+
+    parameters.energy_set->select({start}, {512}).write(observables.energy_array);
+}
+
+void Simulation::write_observables_final(hsize_t start, dvec energy, dvec x_magnetisation,dvec y_magnetisation) {
+    parameters.magnetisation_set->select({start, 0}, {x_magnetisation.size(), 1}).write_raw(x_magnetisation.data(), HighFive::AtomicType<double>{});
+    parameters.magnetisation_set->select({start, 1}, {y_magnetisation.size(), 1}).write_raw(y_magnetisation.data(), HighFive::AtomicType<double>{});
+
+    parameters.energy_set->select({start}, {energy.size()}).write(energy);
 }

@@ -16,8 +16,10 @@ class XYModel : public Model<double> {
     double H;
 
   public:
-    XYModel(double temp, double J, dvec vec_H, int H, int dim, int L)
-        : Model<double>(temp, J), H(H),vec_H(vec_H) {
+    // XYModel(double temp, double J, dvec vec_H, int H, int dim, int L)
+        // : Model<double>(temp, J), H(H),vec_H(vec_H) {
+    XYModel(double temp, double J, int dim, int L)
+        : Model<double>(temp, J) {
         this->lattice_obj = std::make_unique<DoubleLattice>(L,dim);
     }
         double compute_spin_neighbours_term(int index) override;
@@ -26,10 +28,11 @@ class XYModel : public Model<double> {
         double compute_spin_magnetic_term() override {return 0;};
         double compute_total_energy() override;
         double compute_magnetisation() override;
-        void cluster_flip_neighbours(int index, double direction, double angle_flip, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited) override;
+        void cluster_flip_neighbours(int index, double direction, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited, int lattice_dim) override;
         void change_spin_randomly(ivec indices) override;
     // TODO make it general
         void change_spin(int index, double spin) override;
+        void flip_spin(int index, double angle) override;
         double compute_energy_diff_flip() override;
 };
 

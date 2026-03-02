@@ -21,9 +21,6 @@
 int main(int argc, char *argv[]){
     std::string project_folder;
     std::string running_model;
-    // Has the output and error to txt files
-    // (void)std::freopen("output.txt", "w", stdout);
-    // (void)std::freopen("error.txt", "w", stderr);
     int num_threads = 4;
 
         for (int i = 1; i < argc; ++i) {
@@ -66,13 +63,14 @@ int main(int argc, char *argv[]){
             }
         }
         std::cout << "Number of parameters = " << directories.size() << std::endl;
+
         #pragma omp parallel for
         for (int i = 0; i < directories.size(); i++){
             // out commands need to be wrapped around this
-            #pragma omp critical
+            #pragma omp critical(io)
             {
-            std::cout << "Starting parameter combination number " << i +1 << " out of " <<
-                directories.size() << std::endl;
+                std::cout << "Starting parameter combination number " << i +1 << " out of " <<
+                    directories.size() << std::endl;
             }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             // Initialise in critical since multithreading messes up parsing and writing
@@ -84,9 +82,9 @@ int main(int argc, char *argv[]){
             }
             sim->run();
 
-            #pragma omp critical 
+            #pragma omp critical(io) 
             {
-            std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size()<< std::endl;
+                std::cout << "\n" <<"Ended parameter combination number " << i + 1 << " out of " << directories.size() << std::endl;
             }
         }
         std::cout << "\n" << "Ended the simulation!" << std::endl;

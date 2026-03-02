@@ -19,14 +19,17 @@ class PottsModel : public Model<int> {
     int delta_function(int a, int b);
 
   public:
-    PottsModel(double temp, double J, dvec vec_H, int H, int dim, int L, int q)
-        : Model<int>(temp, J), H(H),vec_H(vec_H), q(q) {
+    // PottsModel(double temp, double J, dvec vec_H, int H, int dim, int L, int q)
+    //     : Model<int>(temp, J), H(H),vec_H(vec_H), q(q) {
+    PottsModel(double temp, double J, int dim, int L, int q)
+        : Model<int>(temp, J), q(q) {
         this->lattice_obj = std::make_unique<IntLattice>(L,dim,q);
     }
 
         int compute_spin_neighbours_term(int index) override;
         int compute_spin_neighbours_term(ivec indices) override;
-        int compute_spin_magnetic_term(int dim) override;
+        // int compute_spin_magnetic_term(int dim) override;
+        double compute_spin_magnetic_term(int dim) override{return 0.;};
         int compute_spin_magnetic_term() override{return 0;};
         double compute_total_energy() override;
         double compute_magnetisation() override;

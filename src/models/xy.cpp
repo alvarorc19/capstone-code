@@ -10,21 +10,22 @@ using dvec = std::vector<double>;
 
 //H = -J \sum_{ij} cos(θ_i - θ_j) - H_1 \sum_i cos(θ_i) - H_2 \sum_i sin(θ_i)
 
-
 double XYModel::compute_spin_neighbours_term(int index){
-    dvec neigh_array = lattice_obj->get_neighbours_array(index);
-    double lattice_value = lattice_obj->get_lattice_site(index);
+    const ivec& neigh_table = lattice_obj->get_neighbours_table();
+    const dvec& lattice = lattice_obj->get_lattice();
+    const int stride = 2 * lattice_obj->get_lattice_dim();
     double neigh_sum = 0;
 
-    for (auto &i: neigh_array) {
-        neigh_sum += std::cos(lattice_value - i);
+    for (int i = 0; i < stride; i++) {
+        int neigh_index = neigh_table[index * stride + i];
+        neigh_sum += std::cos(lattice[index] - lattice[neigh_index]);
     }
 
     return neigh_sum;
 }
 double XYModel::compute_spin_neighbours_term(ivec indices){
-    dvec neigh_array = lattice_obj->get_neighbours_array(indices);
-    double lattice_value = lattice_obj->get_lattice_site(indices);
+    const dvec& neigh_array = lattice_obj->get_neighbours_array(indices);
+    const double& lattice_value = lattice_obj->get_lattice_site(indices);
     double neigh_sum = 0;
 
     for (auto &i: neigh_array) {
@@ -51,18 +52,14 @@ double XYModel::compute_spin_magnetic_term(int dim){
     return spin_mag_term;
 }
 double XYModel::compute_total_energy(){
-    double energy = 0;
-    // Neighbour term
     double neigh_energy = 0;
-    for (int i = 0; i< lattice_obj->get_particle_num();i++) {
+    for (int i = 0; i < lattice_obj->get_particle_num();i++) {
         neigh_energy += compute_spin_neighbours_term(i);
     }
 
-    energy +=- J * (neigh_energy / 2);
-
     // // Magnetic term
     // energy+= - vec_H[0] * compute_spin_magnetic_term(0) - vec_H[1] * compute_spin_magnetic_term(1);
-    return energy;
+    return - J * (neigh_energy / 2);
 }
 //Magnetisation here will be taken as the modulus
 // m = sqrt(M_x^2 + M_y^2)
@@ -96,22 +93,33 @@ double XYModel::compute_energy_diff_flip(){
 * $$
 * For $\mathbf{r} = (\cos\phi, \sin\phi)$ and $\mathbf{s}_i = (\cos\theta_i, \sin\theta_i)$.
 */
-void XYModel::cluster_flip_neighbours(int index, double direction, double angle_flip, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited) {
-    double index_value = lattice_obj->get_lattice_site(index);
-    int lattice_dim = lattice_obj->get_lattice_dim();
+void XYModel::cluster_flip_neighbours(int index, double direction, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited, int lattice_dim) {
+    const double& index_value = lattice_obj->get_lattice_site(index);
     const ivec& neighbours_table = lattice_obj->get_neighbours_table();
-    double neigh_value;
-    double probability;
-    double r;
-    int neigh_index;
+    const dvec& lattice = lattice_obj->get_lattice();
+    const double index_dot_prod = 2.0 *  J * beta  * std::cos(direction - index_value);
+    
     // given neighbours adds them depending on probability
     for (int i = 0; i < 2 * lattice_dim; i++) {
-        neigh_index = neighbours_table[index * 2 * lattice_dim + i];
-        neigh_value = lattice_obj->get_lattice_site(neigh_index);
-        probability = 1 - exp(std::min(0., 2 * beta * J * std::cos(direction - index_value) * std::cos(direction - neigh_value)));
-        r = rng::random_real_number(rng::engine);
-        if (r < probability and !visited[neigh_index]) {
-            change_spin(neigh_index, angle_flip);
+        const int neigh_index = neighbours_table[index * 2 * lattice_dim + i];
+
+        if (visited[neigh_index]) continue;
+
+        const double neigh_value = lattice[neigh_index];
+        const double x =  index_dot_prod * std::cos(direction - neigh_value);
+
+        double probability;
+
+        if ( x <= 0) {
+            probability = 1 - exp(x);
+        }
+        else {
+            probability = 0.;
+        }
+
+        const double r = rng::random_real_number(rng::engine);
+        if (r < probability) {
+            flip_spin(neigh_index, direction);
             cluster_stack.emplace_back(neigh_index);
             visited[neigh_index] = 1;
             spins_flipped++;
@@ -130,4 +138,20 @@ void XYModel::change_spin(int index, double spin){
     dvec & lattice = lattice_obj->get_lattice();
     // old_lattice = lattice;
     lattice[index] = spin;
+}
+
+void XYModel::flip_spin(int index, double angle){
+    dvec & lattice = lattice_obj->get_lattice();
+    // old_lattice = lattice;
+    // TODO Hacer esto que te sigue dando error
+    double new_angle = M_PI - lattice[index] + 2 * angle;
+    if (new_angle < 0){
+        lattice[index] = new_angle + 2 * M_PI;
+    }
+    else if (new_angle > 2 * M_PI){
+        lattice[index] = new_angle - 2 * M_PI;
+    }
+    else {
+        lattice[index] = new_angle;
+    }
 }
