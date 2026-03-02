@@ -142,12 +142,29 @@ void Simulation::run() {
         time_step++;
     }
 
-    // For a whole sweep record the lattice
-    for (int i = 0; i < parameters.N ; i++){
-        do_cluster_step();
-        #pragma omp critical(HDF5)
-        {
-            write_lattice(i);
+    // Record the lattice for 1000 steps
+    if (parameters.N > 1000){
+        for (int i = 0; i < parameters.N; i++){
+            do_cluster_step();
+            #pragma omp critical(HDF5)
+            {
+                write_lattice(i);
+            }
+        }
+
+    }
+
+    else {
+        for (int i = 0; i < 1000; i++){
+            do_cluster_step();
+            #pragma omp critical(HDF5)
+            {
+                write_lattice(i);
+            }
+        }
+
+        for (int i = 0; i < parameters.N - 1000 ; i++){
+            do_cluster_step();
         }
     }
     final_energy.emplace_back(model->compute_total_energy());

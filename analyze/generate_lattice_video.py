@@ -64,7 +64,7 @@ def main(project_name: str, parameter_combination: int):
     # stride = 100
     # frame_indices = range(0, 10000, stride)
 
-    frames_ps = 30
+    frames_ps = 20
     nframes = min(1000, lattice_size)
     print("lattice size", lattice_size)
 
