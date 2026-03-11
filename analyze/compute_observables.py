@@ -9,7 +9,6 @@ sys.path.insert(0, str(project_root))
 import toml
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 from utils.h5_utils import(
     import_observable,
     import_physical_parameter,
@@ -18,10 +17,10 @@ from utils.h5_utils import(
 k = 1.380649 * 10**(-23)
 
 # <m>
-def compute_average_magnetisation(directory:pathlib.Path) -> pe.Obs:
+def compute_average_magnetisation(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_obs = pe.Obs([[i[0] for i in magnetisation]], ["x_magnetisation"])
-    y_obs = pe.Obs([[i[1] for i in magnetisation]], ["y_magnetisation"])
+    x_obs = pe.Obs([[i[0] for i in magnetisation[start:]]], ["x_magnetisation"])
+    y_obs = pe.Obs([[i[1] for i in magnetisation[start:]]], ["y_magnetisation"])
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
@@ -30,19 +29,19 @@ def compute_average_magnetisation(directory:pathlib.Path) -> pe.Obs:
     return mag_obs
 
 # <E> or <U> or <H>
-def compute_average_energy(directory:pathlib.Path) -> pe.Obs:
+def compute_average_energy(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy")
-    obs = pe.Obs([energy_array], ["energy"])
+    obs = pe.Obs([energy_array[start:]], ["energy"])
     obs.gamma_method()
     return obs
 
-def compute_normalised_energy(directory:pathlib.Path) -> pe.Obs:
+def compute_normalised_energy(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy")
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
     J = import_physical_parameter(directory, "J")
-    obs = pe.Obs([energy_array], ["energy"])
+    obs = pe.Obs([energy_array[start:]], ["energy"])
     norm_obs = obs / (J * N)
 
     norm_obs.gamma_method()
@@ -63,7 +62,7 @@ def compute_susceptibility_scaling_function(susc_obs:pe.Obs, length:int, gamma:f
 # so its different. According to Newman & Barkema, this can be
 # c = (1/kT^2 N) (<E^2> - <E>^2), susceptibility per spin
 # We shall calculate kc
-def compute_specific_heat_per_spin(directory:pathlib.Path) -> pe.Obs:
+def compute_specific_heat_per_spin(directory:pathlib.Path, start:int = 0) -> pe.Obs:
 
     energy_array = import_observable(directory, "energy") 
     temp = import_physical_parameter(directory, "temperature")
@@ -71,43 +70,30 @@ def compute_specific_heat_per_spin(directory:pathlib.Path) -> pe.Obs:
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
 
-    obs = pe.Obs([energy_array], ["energy"])
-    obs2 = pe.Obs([energy_array**2], ["energy2"])
+    obs = pe.Obs([energy_array[start:]], ["energy"])
+    obs2 = pe.Obs([energy_array[start:]**2], ["energy2"])
     cvk_obs = (obs2 - obs ** 2) / (temp**2 * N)
     cvk_obs.gamma_method()
 
     return cvk_obs
 
 
-def compute_specific_heat(directory:pathlib.Path) -> pe.Obs:
+def compute_specific_heat(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy") 
     temp = import_physical_parameter(directory, "temperature")
-    obs = pe.Obs([energy_array], ["energy"])
-    obs2 = pe.Obs([energy_array**2], ["energy2"])
+    obs = pe.Obs([energy_array[start:]], ["energy"])
+    obs2 = pe.Obs([energy_array[start:]**2], ["energy2"])
     cvk_obs = (obs2 - obs ** 2) / (temp**2)
     cvk_obs.gamma_method()
 
     return cvk_obs
 
 
-def compute_specific_heat(directory:pathlib.Path) -> pe.Obs:
-    energy_array = import_observable(directory, "energy") 
-    temp = import_physical_parameter(directory, "temperature")
-    length = import_physical_parameter(directory, "L")
-    dim = import_physical_parameter(directory, "dimension")
-    N = length ** dim
 
-    obs = pe.Obs([energy_array], ["energy"])
-    obs2 = pe.Obs([energy_array**2], ["energy2"])
-    cvk_obs = (obs2 - obs ** 2) / (temp**2 * N)
-    cvk_obs.gamma_method()
-
-    return cvk_obs
-
-def compute_susceptibility(directory:pathlib.Path) -> pe.Obs:
+def compute_susceptibility(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_magnetisation = np.array([i[0] for i in magnetisation])
-    y_magnetisation = np.array([i[1] for i in magnetisation])
+    x_magnetisation = np.array([i[0] for i in magnetisation[start:]])
+    y_magnetisation = np.array([i[1] for i in magnetisation[start:]])
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
@@ -125,10 +111,10 @@ def compute_susceptibility(directory:pathlib.Path) -> pe.Obs:
 # X = (N/kT) (<m^2> - <m>^2), susceptibility per spin
 # We shall calculate kX
 
-def compute_susceptibility_per_spin(directory:pathlib.Path) -> pe.Obs:
+def compute_susceptibility_per_spin(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_magnetisation = np.array([i[0] for i in magnetisation])
-    y_magnetisation = np.array([i[1] for i in magnetisation])
+    x_magnetisation = np.array([i[0] for i in magnetisation[start:]])
+    y_magnetisation = np.array([i[1] for i in magnetisation[start:]])
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
@@ -141,10 +127,10 @@ def compute_susceptibility_per_spin(directory:pathlib.Path) -> pe.Obs:
     X_obs.gamma_method()
     return X_obs
 
-def compute_binder_cumulant(directory:pathlib.Path) -> pe.Obs:
+def compute_binder_cumulant(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     order_parameter_array = import_observable(directory, "magnetisation")
-    obs2 = pe.Obs([order_parameter_array**2], ["magnetisation2"])
-    obs4 = pe.Obs([order_parameter_array**4], ["magnetisation4"])
+    obs2 = pe.Obs([order_parameter_array[start:]**2], ["magnetisation2"])
+    obs4 = pe.Obs([order_parameter_array[start:]**4], ["magnetisation4"])
     binder_obs = 1 - (obs4 / (2 * obs2**2))
     binder_obs.gamma_method()
     return binder_obs
