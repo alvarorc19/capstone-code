@@ -13,14 +13,17 @@ print("path: ", os.getcwd())
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from tqdm import tqdm
+import matplotlib as mpl
 from matplotlib.animation import FuncAnimation
+from tqdm import tqdm
 from IPython.display import HTML
 import toml
 from utils.h5_utils import (
     import_lattice,
     import_lattice_size,
 )
+
+mpl.rcParams['animation.embed_limit'] = 200
 
 
 def generate_ising_grid(time_step:int, df:pd.DataFrame)->np.array:
@@ -36,13 +39,13 @@ def generate_lattice(time_step:int, df:pd.DataFrame, config:dict) -> np.array:
     L = config["physical_settings"]["L"]
     dim = config["physical_settings"]["dimension"]
     flat_grid = df.to_numpy().flatten()
-    shape = tuple([L] * dim)
+    shape = tuple([int(L)] * dim)
     full_dim_grid = flat_grid.reshape(shape)
     return full_dim_grid
 
 def main(project_name: str, parameter_combination: int):
-    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
-    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects") 
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects") 
+    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects") 
     project_path = project_root/ project_name / f"parameter-config-{parameter_combination}"
     config = toml.load(project_path / "config.toml")
 
@@ -65,28 +68,35 @@ def main(project_name: str, parameter_combination: int):
     # frame_indices = range(0, 10000, stride)
 
     frames_ps = 20
-    nframes = min(1000, lattice_size)
+    nframes = min(100, lattice_size)
     print("lattice size", lattice_size)
 
-    save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
+    # save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
+    save_path = project_path.parent.parent.parent.parent / "analyze" /"output"/ "vid_dump" 
     save_path.parent.mkdir(parents = True, exist_ok = True)
+    save_path_frame = save_path / "frames"
+    save_path_frame.mkdir(parents = True, exist_ok = True)
     print("save path", save_path)
 
     def update(frame):
         # actual_frame = frame_indices[frame]
         # print(f"Time = {frame}")
         im.set_array(generate_lattice(frame, import_lattice(project_path,frame), config))
+        fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=150)
         return [im]
-    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = frames_ps, blit = True)
-    # html = ani.to_jshtml()
-    # with open("analyze/vid_dump/temperature50.html", "w") as f:
-    #     f.write(html)
-    ani.save(save_path, writer = "ffmpeg", fps =frames_ps)
+    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = frames_ps, blit = True, cache_frame_data = False)
+    html = ani.to_jshtml()
+    with open(save_path / f"{project_name}_par{parameter_combination}_lattice.html", "w") as f:
+        f.write(html)
+    ani.save(save_path / f"{project_name}_par_{parameter_combination}_lattice.gif", writer = "ffmpeg", fps =frames_ps)
+
+    # to save the pngs
+    # update plot for frame i
 
 
 if __name__ == "__main__":
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "test2000"
+    project_name = "t20_10l50-200_dim2_10-5sweeps/t20_10l50-200_dim2_10-5sweeps_1"
     parameter_combination = 0
     main(project_name, parameter_combination)
     # for i in range(30):

@@ -51,15 +51,18 @@ def _find_observable_function(observable:str):
     }
     return observable_functions[observable]
 
-def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool = False):
+def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool = False, start: int = 0):
     observable = "susceptibility"
     saving_path = directory.parent.parent / "analyze" / "output"/"vid_dump"
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
         params = []
-        for dir in sub_dir.iterdir():
+        for dir in sub_dir:
             if dir.is_dir():
-                params.append(dir)
+                for direc in dir.iterdir():
+                    if direc.is_dir():
+                        params.append(direc)
+
     else:
         params = [x for x in directory.iterdir() if x.is_dir()]
 
@@ -83,7 +86,7 @@ def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool 
         print("direc", direc)
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        observable_obs = compute_observable(direc)
+        observable_obs = compute_observable(direc, start)
         observable_obs_array = np.append(observable_obs_array, observable_obs)
         observable_array = np.append(observable_array, observable_obs.value)
         observable_error = np.append(observable_error, observable_obs.dvalue)
@@ -232,6 +235,7 @@ def do_observable_plot(
         log_plot:bool = False,
         log_fit:bool = False,
         linear_fit:bool = False,
+        start:int = 0
     ):
 
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
@@ -240,9 +244,11 @@ def do_observable_plot(
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
         params = []
-        for dir in sub_dir.iterdir():
+        for dir in sub_dir:
             if dir.is_dir():
-                params.append(dir)
+                for direc in dir.iterdir():
+                    if direc.is_dir():
+                        params.append(direc)
     else:
         params = [x for x in directory.iterdir() if x.is_dir()]
 
@@ -264,7 +270,7 @@ def do_observable_plot(
         print("direc", direc)
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        observable_obs = compute_observable(direc)
+        observable_obs = compute_observable(direc, start)
         observable_obs_array = np.append(observable_obs_array, observable_obs)
         observable_array = np.append(observable_array, observable_obs.value)
         observable_error = np.append(observable_error, observable_obs.dvalue)
@@ -274,15 +280,10 @@ def do_observable_plot(
         nrows=1
     )
 
-    figtau, axtau = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
-
     if x_data == "temperature":
         cmap = plt.cm.tab20
 
-        if isinstance(unique_lengths, np.ndarray):
+        if isinstance(unique_lengths, list):
             length_array,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
             colors = cmap(np.arange(len(unique_lengths)*2))
             for i,l in enumerate(unique_lengths):
@@ -365,7 +366,6 @@ def do_observable_plot(
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_{observable}.pdf")
-    figtau.savefig(saving_path / f"{directory.name}_tauint_{observable}.pdf")
     plt.close(fig)
 
 
@@ -431,7 +431,7 @@ def _add_format_plot(
 
     return axs
 
-def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False):
+def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
     # Add Obs crap
 
     plt.tight_layout()
@@ -441,17 +441,19 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False):
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
         params = []
-        for dir in sub_dir.iterdir():
+        for dir in sub_dir:
             if dir.is_dir():
-                params.append(dir)
+                for direc in dir.iterdir():
+                    if direc.is_dir():
+                        params.append(direc)
     else:
         params = [x for x in directory.iterdir() if x.is_dir()]
 
 
     for direc in params:
         magnetisation = import_observable(direc, "magnetisation")
-        x_magnetisation = np.array([i[0] for i in magnetisation])
-        y_magnetisation = np.array([i[1] for i in magnetisation])
+        x_magnetisation = np.array([i[0] for i in magnetisation[start:]])
+        y_magnetisation = np.array([i[1] for i in magnetisation[start:]])
         length = import_physical_parameter(direc, "L")
         dim = import_physical_parameter(direc, "dimension")
         N = length ** dim
@@ -473,9 +475,10 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False):
             nrows=1
         )
 
-        ax2.plot(energy, color = "chartreuse", alpha = 0.5)
+        ax2.plot(energy[start:], color = "chartreuse", alpha = 0.5)
         ax2.set_ylabel(r"Energy $E$")
         ax2.set_xlabel(r"Time $t$ in MCS")
+        plt.show()
 
         fig_mag.savefig(saving_path / f"{direc.name}_magnetisation_time.pdf", bbox_inches = "tight")
         plt.close()
