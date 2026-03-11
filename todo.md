@@ -1,7 +1,7 @@
 # Code implementation
-- Make observables array use chunk system and not just 1 array
 - Implement RG in C++ code
-- Make code saving the last 10 lattice steps
+- Make code saving the last 100 lattice steps? Have done it for 
+    1000 but might occupy too much storage. Let me try simulation with only 100.
     - Create a separate dataset that its only job is to store the last 10 states
     - This means create a new function to write the lattice at the end of simulation
 
