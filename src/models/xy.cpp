@@ -2,6 +2,7 @@
 #include "random.h"
 #include <iostream>
 #include <string>
+#include <omp.h>
 #include <vector>
 #include <cmath>
 
@@ -155,3 +156,141 @@ void XYModel::flip_spin(int index, double angle){
         lattice[index] = new_angle;
     }
 }
+
+// TODO: This thing will only work for 2d at the moment
+void XYModel::compute_reduced_lattice(int b, size_t N, size_t L){
+    rg_x_spins.clear();
+    rg_y_spins.clear();
+    rg_x_spins.reserve(N / (b*b));
+    rg_y_spins.reserve(N / (b*b));
+    const dvec & lattice = lattice_obj->get_lattice();
+    
+    for(int i = 0; i < L; i+= b){
+        for(int j = 0; j < L; j+= b){
+            double x_term = 0;
+            double y_term = 0;
+            for (int k = 0; k < b; k++){
+                x_term+= std::cos(lattice[(i+k) * L + (j+k)]);
+                y_term+= std::sin(lattice[(i+k) * L + (j+k)]);
+                int l = 0;
+                while (l < k){
+                    x_term += std::cos(lattice[(i+k) * L + (j+l)]);
+                    x_term += std::cos(lattice[(i+l) * L + (j+k)]);
+                    y_term += std::sin(lattice[(i+k) * L + (j+l)]);
+                    y_term += std::sin(lattice[(i+l) * L + (j+k)]);
+                    l++;
+                }
+            }
+            rg_x_spins.emplace_back(x_term / (b*b));   
+            rg_y_spins.emplace_back(y_term / (b*b));   
+        }
+    }
+
+}
+
+double XYModel::compute_rg_spin_magnetic_term(int dim){
+    double magnetisation = 0;
+
+    if (dim == 0) {
+        for (auto &i: rg_x_spins){
+            magnetisation += i;
+        }
+    }
+
+    else if (dim == 1){
+        for (auto &i: rg_y_spins){
+            magnetisation += i;
+        }
+    }
+
+    else{
+        std::cout << "This only has up to 2 dimensions" << std::endl;
+    }
+
+    return magnetisation;
+}
+
+// H = -J \sum_<ij> vec(s_i) · vec(s_j) = -J \sum_<ij> s_ix s_jx + s_iy s_jy
+double XYModel::compute_rg_energy(int b, size_t N, ivec & neigh_table, int dim){
+    double energy = 0;
+    const int rg_N = N / ((std::pow(b,dim)));
+    const int stride = 2 * dim;
+    for(int i = 0; i < rg_N; i++) {
+        for (int j = 0; j < stride; j++){
+            energy+= rg_x_spins[i] * rg_x_spins[neigh_table[i * stride + j]];
+            energy+= rg_y_spins[i] * rg_y_spins[neigh_table[i * stride + j]];
+        }
+    }
+    return -J * (energy / 2);
+
+}
+
+ivec XYModel::calculate_reduced_neighbours_table(int L, int dim, int b) {
+    assert(L % b == 0 && "L/b needs to be an exact division to partition it");
+    int rg_L = L / b;
+    ivec neighbours_array(std::pow(rg_L, dim) * 2 * dim);
+    if (dim == 2) {
+        for (int i = 0; i < rg_L; i++) {
+            for (int j = 0; j < rg_L; j++) {
+
+                int index = i * rg_L + j;
+
+                // i
+                int i_up = (i + 1 == rg_L) ? 0 : i + 1;
+                int i_down = (i - 1 == -1) ? rg_L - 1 : i - 1;
+                // j
+                int j_up = (j + 1 == rg_L) ? 0 : j + 1;
+                int j_down = (j - 1 == -1) ? rg_L - 1 : j - 1;
+
+                // Up
+                neighbours_array[4 * index + 0] = i_up * rg_L + j;
+                // Down
+                neighbours_array[4 * index + 1] = i_down * rg_L + j;
+                // Right
+                neighbours_array[4 * index + 2] = i* rg_L + j_up;
+                // Left
+                neighbours_array[4 * index + 3] = i * rg_L + j_down;
+            }
+        }
+
+    } else if (dim == 3) {
+        for (int i = 0; i < L / b; i++) {
+            for (int j = 0; j < L / b; j++) {
+                for (int k = 0; k < L / b; k++) {
+
+                    int index = i * L * L + j * L + k;
+
+                    // i
+                    int i_up = (i + 1 == L) ? 0 : i + 1;
+                    int i_down = (i - 1 == -1) ? L - 1 : i - 1;
+                    // j
+                    int j_up = (j + 1 == L) ? 0 : j + 1;
+                    int j_down = (j - 1 == -1) ? L - 1 : j - 1;
+                    // k
+                    int k_up = (k + 1 == L) ? 0 : k + 1;
+                    int k_down = (k - 1 == -1) ? L - 1 : k - 1;
+
+                    // i
+                    neighbours_array[6 * index + 0] = i_up * L * L + j * L + k;
+                    neighbours_array[6 * index + 1] = i_down * L * L + j * L + k;
+                    // j
+                    neighbours_array[6 * index + 2] = i * L * L + j_up * L + k;
+                    neighbours_array[6 * index + 3] = i * L * L + j_down * L + k;
+                    // k
+                    neighbours_array[6 * index + 4] = i * L * L + j * L + k_up;
+                    neighbours_array[6 * index + 5] = i * L * L + j * L + k_down;
+                }
+            }
+        }
+
+    } else {
+        // TODO Look at obsidian to know how to further implement it
+        std::cout << "Further dimensions not implemented yet" << "\n";
+        exit(2);
+    }
+    return neighbours_array;
+}
+
+
+
+

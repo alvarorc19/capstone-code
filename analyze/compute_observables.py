@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from utils.h5_utils import(
     import_observable,
     import_physical_parameter,
+    import_renormalised_magnetisation,
+    import_renormalised_energy,
 )
 
 k = 1.380649 * 10**(-23)
@@ -28,12 +30,42 @@ def compute_average_magnetisation(directory:pathlib.Path, start:int = 0) -> pe.O
     mag_obs.gamma_method()
     return mag_obs
 
+def compute_renormalised_magnetisation(directory:pathlib.Path, start:int = 0, b:int = 1) -> pe.Obs:
+    if b == 1:
+        magnetisation = import_observable(directory ,"magnetisation")
+    else:
+        magnetisation = import_renormalised_magnetisation(directory , b)
+    x_obs = pe.Obs([[i[0] for i in magnetisation[start:]]], ["x_magnetisation"])
+    y_obs = pe.Obs([[i[1] for i in magnetisation[start:]]], ["y_magnetisation"])
+    length = import_physical_parameter(directory, "L")
+    dim = import_physical_parameter(directory, "dimension")
+    N = (length / b) ** dim
+    mag_obs = np.sqrt(x_obs**2 + y_obs**2) / N
+    mag_obs.gamma_method()
+    print("mag_obs", mag_obs.details())
+    return mag_obs
+
 # <E> or <U> or <H>
 def compute_average_energy(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy")
     obs = pe.Obs([energy_array[start:]], ["energy"])
     obs.gamma_method()
     return obs
+
+def compute_renormalised_energy(directory:pathlib.Path, start:int = 0, b:int = 1) -> pe.Obs:
+    if b == 1:
+        energy_array = import_observable(directory, "energy")
+    else:
+        energy_array = import_renormalised_energy(directory, b)
+
+    length = import_physical_parameter(directory, "L")
+    dim = import_physical_parameter(directory, "dimension")
+    N = (length/b) ** dim
+    J = import_physical_parameter(directory, "J")
+    obs = pe.Obs([energy_array[start:]], ["energy"])
+    norm_obs = obs / (J * N)
+    norm_obs.gamma_method()
+    return norm_obs
 
 def compute_normalised_energy(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy")

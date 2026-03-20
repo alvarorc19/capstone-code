@@ -32,6 +32,13 @@ struct SimulationParameters {
     std::unique_ptr<HighFive::DataSet> lattice_set;
     std::unique_ptr<HighFive::DataSet> magnetisation_set;
     std::unique_ptr<HighFive::DataSet> energy_set;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set1;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set2;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set3;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set1;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set2;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set3;
+    std::unique_ptr<HighFive::DataSet> cluster_size_set;
     std::string model_type;
     std::filesystem::path project_folder_path;
     int L;
@@ -47,7 +54,7 @@ struct SimulationParameters {
     size_t total_sweeps;
     // bool record_correlation_length = false;
     // bool record_correlation_function = false;
-    bool save_last_state = false;
+    bool rg_method = false;
 };
 
 

@@ -35,9 +35,7 @@ parameters = {
     },
     "simulation_settings" : {
         "total_sweeps" : total_sweeps,
-        # "record_correlation_length" : False,
-        # "record_correlation_function" : False,
-        "save_last_state": False,
+        "rg_method": False,
     },
     "git_hash":get_git_hash(),
     "seed":seed_number

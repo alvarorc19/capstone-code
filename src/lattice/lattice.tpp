@@ -10,6 +10,8 @@
 using ivec = std::vector<int>;
 using dvec = std::vector<double>;
 
+// (i,j) -> i*L + j; 
+// (i1, i2, ..., in) -> i1 * L^n + i2 * L^{n-1} + ... + i(n-1) * L + in
 template<class T>
 int Lattice<T>::get_1d_index(ivec indices) {
     assert((lattice_dim == indices.size()) &&

@@ -30,6 +30,7 @@ class Simulation {
         int time_step = 0;
         int spins_flipped = 0;
         ivec cluster_stack;
+        ivec cluster_size;
         std::vector<uint8_t> visited;
         std::unique_ptr<ModelBase> model;/**< a unique_ptr element that points to any of the models created with the Model class or its parent ModelBase */
 
@@ -84,10 +85,24 @@ class Simulation {
         void initialise_writing();
         
         /**
-         * @brief It executes the simulation, a full run corresponding to the time steps
+         * @brief It executes the simulation, a full run corresponding to the time steps. Chooses 
+         * between using renormalisation or not if specified 
          * 
          */
         void run();
+
+        /**
+         * @brief It executes the simulation, a full run corresponding to the time steps
+         * 
+         */
+        void normal_run();
+
+        /**
+         * @brief It exeucutes the simulation using renormalisation group methods
+         * to store the data for further analysis
+         * 
+         */
+        void rg_run();
 
         /**
          * @brief executes a single Metropolis step
@@ -111,7 +126,6 @@ class Simulation {
         //TODO
         void do_cluster_step();
         void do_cluster_sweep();
-        void do_cluster_recording_sweep();
 
         /**
          * @brief  Writes the lattice in the dataset at a given time step
@@ -132,12 +146,31 @@ class Simulation {
         void write_observables_after_loop(hsize_t start);
 
         /**
+         * @brief writes the renormalised observables into the h5 file after
+         * the run from the Observables object for the batch, currently
+         * it is $2^9$ to have easy bitwise 
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_rg_observables_after_loop(hsize_t start);
+
+        /**
          * @brief writes the observables into the h5 file for the last batch of steps.
          *
          * @param start int position from which to start writing
          * 
          */
-        void write_observables_final(hsize_t start, dvec energy, dvec x_magnetisation,dvec y_magnetisation);
+        void write_observables_final(hsize_t start, dvec energy, dvec x_magnetisation,dvec y_magnetisation, dvec cluster_size);
+
+        /**
+         * @brief writes the renormalised observables into the h5 file
+         * for the last batch of steps.
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_rg_observables_final(hsize_t start, dvec rg_energy1, dvec rg_energy2, dvec rg_energy3, dvec rg_x_magnetisation1,dvec rg_x_magnetisation2,dvec rg_x_magnetisation3, dvec rg_y_magnetisation1,dvec rg_y_magnetisation2, dvec rg_y_magnetisation3);
 
         /**
          * @brief Updates the observables stored in the Observables object
@@ -145,7 +178,22 @@ class Simulation {
          * @param position int gets the position of the array to save observable
          * 
          */
-        void update_observables(int position);
+        void update_observables(int position, ivec & cluster_size);
+
+        /**
+         * @brief Updates the observables stored in the Observables object
+         * corresponding to renormalisation
+         *
+         * @param position int gets the position of the array to save observable
+         * @param b1 int first scale factor used
+         * @param b2 int second scale factor used
+         * @param neigh_table1 int vector neighbours table for b1
+         * @param neigh_table2 int vector neighbours table for b2
+         * 
+         */
+        void update_rg_observables(int position, int b1, int b2,int b3, ivec & neigh_table1, ivec & neigh_table2, ivec & neigh_table3);
+
+        double compute_average_cluster_size(ivec & cluster_size);
 };
 
 #endif

@@ -29,6 +29,8 @@ from compute_observables import (
     compute_reduced_temperature,
     compute_susceptibility_scaling_function,
     compute_specific_heat_per_spin,
+    compute_renormalised_energy,
+    compute_renormalised_magnetisation,
 )
 from utils.h5_utils import (
     import_observable,
@@ -330,9 +332,6 @@ def do_observable_plot(
                 title = f"{observable.capitalize()} vs Temperature",
                 logscale = log_plot,
                 linear_fit = linear_fit,
-                log_fit = log_fit,
-                main_color = colors[i],
-                secondary_color = colors[i+1],
             )
 
     elif x_data == "length":
@@ -438,6 +437,7 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 
     saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
     saving_path.mkdir(parents = True, exist_ok = True)
+    print("save path : ", saving_path)
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
         params = []
@@ -459,6 +459,9 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
         N = length ** dim
         magnetisation_array = np.sqrt(x_magnetisation**2 + y_magnetisation**2) / N
         energy = import_observable(direc, "energy")
+        cluster_size = import_observable(direc, "average_cluster_size")
+        temperature = import_physical_parameter(direc, "temperature")
+        susceptibility = ( 1 / temperature) * cluster_size
 
         fig_mag, ax1 = plt.subplots(
             ncols=1,
@@ -468,6 +471,8 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
         ax1.plot(magnetisation_array, color = "orangered", alpha = 0.5)
         ax1.set_ylabel(r"Magnetisation $m$")
         ax1.set_xlabel(r"Time $t$ in MCS")
+        fig_mag.savefig(saving_path / f"{direc.name}_magnetisation_time.pdf", bbox_inches = "tight")
+        plt.close(fig_mag)
 
 
         fig_energy, ax2 = plt.subplots(
@@ -478,9 +483,116 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
         ax2.plot(energy[start:], color = "chartreuse", alpha = 0.5)
         ax2.set_ylabel(r"Energy $E$")
         ax2.set_xlabel(r"Time $t$ in MCS")
-        plt.show()
 
-        fig_mag.savefig(saving_path / f"{direc.name}_magnetisation_time.pdf", bbox_inches = "tight")
-        plt.close()
         fig_energy.savefig(saving_path / f"{direc.name}_energy_time.pdf", bbox_inches = "tight")
-        plt.close()
+        plt.close(fig_energy)
+
+        fig_cluster_size, ax3 = plt.subplots(
+            ncols=1,
+            nrows=1
+        )
+
+        ax3.plot(cluster_size[start:], color = "navy", alpha = 0.5)
+        ax3.set_ylabel(r"Average cluster size $\langle n \rangle$")
+        ax3.set_xlabel(r"Time $t$ in MCS")
+
+        fig_cluster_size.savefig(saving_path / f"{direc.name}_cluster_size_time.pdf", bbox_inches = "tight")
+        plt.close(fig_cluster_size)
+
+        fig_susc, ax3 = plt.subplots(
+            ncols=1,
+            nrows=1
+        )
+
+        ax3.plot(susceptibility[start:], color = "red", alpha = 0.5)
+        ax3.set_ylabel(r"Susceptibility $\chi$")
+        ax3.set_xlabel(r"Time $t$ in MCS")
+        fig_susc.savefig(saving_path / f"{direc.name}_susceptibility_time.pdf", bbox_inches = "tight")
+        plt.close(fig_susc)
+
+def do_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
+    plt.tight_layout()
+
+    saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
+    saving_path.mkdir(parents = True, exist_ok = True)
+    print("save path : ", saving_path)
+    if is_deep:
+        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        params = []
+        for dir in sub_dir:
+            if dir.is_dir():
+                for direc in dir.iterdir():
+                    if direc.is_dir():
+                        params.append(direc)
+    else:
+        params = [x for x in directory.iterdir() if x.is_dir()]
+
+    fig_mag, ax1 = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+
+    fig_energy, ax2 = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+
+    b_list = [1,2,4,16]
+    for i,b in enumerate(b_list):
+        temp_array = np.array([])
+        length_array = np.array([])
+        magnetisation_array = np.array([])
+        magnetisation_error = np.array([])
+        magnetisation_obs_array = np.array([])
+        energy_array = np.array([])
+        energy_error = np.array([])
+        energy_obs_array = np.array([])
+
+        with open(directory / "global_parameters.json", "r") as f:
+            global_config = json.load(f)
+        unique_lengths = global_config["physical_settings"]["L"]
+        unique_temp = global_config["physical_settings"]["temperature"]
+
+        start = 200
+        for direc in params:
+            temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
+            length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
+            magnetisation_obs = compute_renormalised_magnetisation(direc, start, b)
+            magnetisation_obs_array = np.append(magnetisation_obs_array, magnetisation_obs)
+            magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
+            magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+
+            energy_obs = compute_renormalised_energy(direc, start, b)
+            energy_obs_array = np.append(energy_obs_array, energy_obs)
+            energy_array = np.append(energy_array, energy_obs.value)
+            energy_error = np.append(energy_error, energy_obs.dvalue)
+
+
+        temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
+        cmap = plt.cm.tab20
+        colors = cmap(np.arange(len(b_list)))
+
+        j = 0
+        l = unique_lengths
+        xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
+        yaxis = np.array(magnetisation_array[j * len(unique_temp):(j+1)*len(unique_temp)])
+        yerr = np.array(magnetisation_error[j * len(unique_temp):(j+1)*len(unique_temp)])
+        ax1.errorbar(xaxis, yaxis, yerr, label = f"b = {b}", color = colors[i], fmt = ".-")
+
+        xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
+        yaxis = np.array(energy_array[j * len(unique_temp):(j+1)*len(unique_temp)])
+        yerr = np.array(energy_error[j * len(unique_temp):(j+1)*len(unique_temp)])
+        ax2.errorbar(xaxis, yaxis, yerr, label = f"b = {b}", color = colors[i], fmt = ".-")
+        
+    ax1.set_xlabel(r"Temperature $T$")
+    ax1.set_ylabel(r"Magnetisation $m$")
+    ax1.set_title(f"RG Monte Carlo for the magnetisation for $b = ${b_list} and $L = ${l}")
+    ax1.legend()
+
+    ax2.set_xlabel(r"Temperature $T$")
+    ax2.set_ylabel(r"Energy per spin $e$")
+    ax2.set_title(f"RG Monte Carlo for the energy for $b = ${b_list} and $L = ${l}")
+    ax2.legend()
+
+    fig_mag.savefig(saving_path / f"{direc.name}_renormalised_magnetisation.pdf", bbox_inches = "tight")
+    fig_energy.savefig(saving_path / f"{direc.name}_renormalised_energy.pdf", bbox_inches = "tight")

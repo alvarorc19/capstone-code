@@ -25,6 +25,17 @@ struct Observables {
     double susceptibility;
     double correlation_length;
     dvec correlation_function_array;
+    dvec average_cluster_size;
+    // renormalised quantities
+    dvec rg_x_magnetisation1;
+    dvec rg_y_magnetisation1;
+    dvec rg_x_magnetisation2;
+    dvec rg_y_magnetisation2;
+    dvec rg_x_magnetisation3;
+    dvec rg_y_magnetisation3;
+    dvec rg_energy1;
+    dvec rg_energy2;
+    dvec rg_energy3;
 };
 
 

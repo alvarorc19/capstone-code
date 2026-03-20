@@ -136,6 +136,10 @@ class Model: public ModelBase{
         void change_spin(int index, double spin) override {}
         void flip_spin(int index, double angle) override {}
         void cluster_flip_neighbours(int index, double direction, ivec& cluster_stack, int& spins_flipped, std::vector<uint8_t> & visited, int lattice_dim) override{}
+        void compute_reduced_lattice(int b, size_t N, size_t L) override{}
+        double compute_rg_spin_magnetic_term(int dim) override{return 1.;}
+        double compute_rg_energy(int b, size_t N, ivec & neigh_table, int dim) override{return 0.;}
+        ivec calculate_reduced_neighbours_table(int L, int dim, int b) override{ivec a{0};return a;}
 
 };
 

@@ -5,7 +5,7 @@ import toml
 import pathlib
 
 # Import observable arrays
-def import_observable(directory: pathlib.Path, observable_name: str)->int | float:
+def import_observable(directory: pathlib.Path, observable_name: str)->np.ndarray:
     f = h5py.File(directory / "results.h5", "r")    
     observable = np.array(f["observables"][observable_name])
     f.close()
@@ -28,3 +28,30 @@ def import_lattice_size(directory: pathlib.Path) -> int:
     size = f["lattice"].shape[0]
     f.close()
     return size
+
+def import_renormalised_magnetisation(directory: pathlib.Path, b: int = 4) -> np.ndarray:
+    f = h5py.File(directory / "results.h5", "r")
+    rg_keys = list(f["renormalisation"].keys())
+    array = np.array([])
+    for key in rg_keys:
+        observable, scale, b_file = key.split("_")
+        if scale != "b":
+            exit()
+        if (int(b_file) == b and observable == "magnetisation"):
+            array = np.array(list(f["renormalisation"][key]))
+    f.close()
+
+    return array
+
+def import_renormalised_energy(directory: pathlib.Path, b: int = 4) -> np.ndarray:
+    f = h5py.File(directory / "results.h5", "r")
+    rg_keys = list(f["renormalisation"].keys())
+    for key in rg_keys:
+        observable, scale, b_file = key.split("_")
+        if scale != "b":
+            exit()
+        if (int(b_file) == b and observable == "energy"):
+            array = np.array(list(f["renormalisation"][key]))
+    f.close()
+
+    return array
