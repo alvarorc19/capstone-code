@@ -25,7 +25,7 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "rg_test2"
+    project_name = "critical_temp_test"
     is_deep = False
     start_step = 100
     # parameter_combination = 2
@@ -56,21 +56,21 @@ def main():
     ]
 
     # do_order_parameter_plot(project_path, is_deep,0)
-    do_renormalisation_plot(project_path, is_deep, start_step)
+    # do_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
-    # for observable, observables_title in zip(observables, observables_titles):
-    #     do_observable_plot(
-    #         observable = observable,
-    #         observable_title = observables_title,
-    #         directory = project_path, 
-    #         is_deep = is_deep,
-    #         x_data = "temperature",
-    #         log_plot = False,
-    #         log_fit = False,
-    #         linear_fit = False,
-    #         start = start_step,
-    #     )
+    for observable, observables_title in zip(observables, observables_titles):
+        do_observable_plot(
+            observable = observable,
+            observable_title = observables_title,
+            directory = project_path, 
+            is_deep = is_deep,
+            x_data = "temperature",
+            log_plot = False,
+            log_fit = False,
+            linear_fit = False,
+            start = start_step,
+        )
 
 
     # do_finite_size_analysis_susceptibility(project_path, is_deep, start_step)

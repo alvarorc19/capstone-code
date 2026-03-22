@@ -21,12 +21,13 @@ k = 1.380649 * 10**(-23)
 # <m>
 def compute_average_magnetisation(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_obs = pe.Obs([[i[0] for i in magnetisation[start:]]], ["x_magnetisation"])
-    y_obs = pe.Obs([[i[1] for i in magnetisation[start:]]], ["y_magnetisation"])
+    x_mag = magnetisation[:,0]
+    y_mag = magnetisation[:,1]
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
-    mag_obs = np.sqrt(x_obs**2 + y_obs**2) / N
+    magnetisation = np.sqrt((x_mag)**2 + (y_mag)**2) / N
+    mag_obs = pe.Obs([magnetisation[start:]], ["magnetisation"])
     mag_obs.gamma_method()
     return mag_obs
 
@@ -35,14 +36,15 @@ def compute_renormalised_magnetisation(directory:pathlib.Path, start:int = 0, b:
         magnetisation = import_observable(directory ,"magnetisation")
     else:
         magnetisation = import_renormalised_magnetisation(directory , b)
-    x_obs = pe.Obs([[i[0] for i in magnetisation[start:]]], ["x_magnetisation"])
-    y_obs = pe.Obs([[i[1] for i in magnetisation[start:]]], ["y_magnetisation"])
+
+    x_mag = magnetisation[:,0]
+    y_mag = magnetisation[:,1]
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = (length / b) ** dim
-    mag_obs = np.sqrt(x_obs**2 + y_obs**2) / N
+    magnetisation = np.sqrt(x_mag**2 + y_mag**2) / N
+    mag_obs = pe.Obs([magnetisation[start:]], ["magnetisation"])
     mag_obs.gamma_method()
-    print("mag_obs", mag_obs.details())
     return mag_obs
 
 # <E> or <U> or <H>
@@ -103,7 +105,7 @@ def compute_specific_heat_per_spin(directory:pathlib.Path, start:int = 0) -> pe.
     N = length ** dim
 
     obs = pe.Obs([energy_array[start:]], ["energy"])
-    obs2 = pe.Obs([energy_array[start:]**2], ["energy2"])
+    obs2 = pe.Obs([energy_array[start:]**2], ["energy"])
     cvk_obs = (obs2 - obs ** 2) / (temp**2 * N)
     cvk_obs.gamma_method()
 
@@ -114,7 +116,7 @@ def compute_specific_heat(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     energy_array = import_observable(directory, "energy") 
     temp = import_physical_parameter(directory, "temperature")
     obs = pe.Obs([energy_array[start:]], ["energy"])
-    obs2 = pe.Obs([energy_array[start:]**2], ["energy2"])
+    obs2 = pe.Obs([energy_array[start:]**2], ["energy"])
     cvk_obs = (obs2 - obs ** 2) / (temp**2)
     cvk_obs.gamma_method()
 
@@ -124,16 +126,16 @@ def compute_specific_heat(directory:pathlib.Path, start:int = 0) -> pe.Obs:
 
 def compute_susceptibility(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_magnetisation = np.array([i[0] for i in magnetisation[start:]])
-    y_magnetisation = np.array([i[1] for i in magnetisation[start:]])
+    x_magnetisation = np.array(magnetisation[:,0])
+    y_magnetisation = np.array(magnetisation[:,1])
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
     temp = import_physical_parameter(directory, "temperature")
     magnetisation_array = np.sqrt(x_magnetisation**2 + y_magnetisation**2) / N
 
-    obs = pe.Obs([magnetisation_array], ["magnetisation"])
-    obs2 = pe.Obs([magnetisation_array**2], ["magnetisation2"])
+    obs = pe.Obs([magnetisation_array[start:]], ["magnetisation"])
+    obs2 = pe.Obs([magnetisation_array[start:]**2], ["magnetisation"])
     X_obs = ((obs2 - obs ** 2) * N**2) / temp
     X_obs.gamma_method()
     return X_obs
@@ -145,24 +147,25 @@ def compute_susceptibility(directory:pathlib.Path, start:int = 0) -> pe.Obs:
 
 def compute_susceptibility_per_spin(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     magnetisation = import_observable(directory ,"magnetisation")
-    x_magnetisation = np.array([i[0] for i in magnetisation[start:]])
-    y_magnetisation = np.array([i[1] for i in magnetisation[start:]])
+    x_magnetisation = np.array(magnetisation[:,0])
+    y_magnetisation = np.array(magnetisation[:,1])
     length = import_physical_parameter(directory, "L")
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
     temp = import_physical_parameter(directory, "temperature")
     magnetisation_array = np.sqrt(x_magnetisation**2 + y_magnetisation**2) / N
 
-    obs = pe.Obs([magnetisation_array], ["magnetisation"])
-    obs2 = pe.Obs([magnetisation_array**2], ["magnetisation2"])
-    X_obs = ((obs2 - obs ** 2) * N) / temp
+    x_obs = pe.Obs([x_magnetisation[start:] / N], ["magnetisation"])
+    y_obs = pe.Obs([y_magnetisation[start:] / N], ["magnetisation"])
+    obs2 = pe.Obs([magnetisation_array[start:]**2], ["magnetisation"])
+    X_obs = ((obs2 - x_obs ** 2 - y_obs**2) * N) / temp
     X_obs.gamma_method()
     return X_obs
 
 def compute_binder_cumulant(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     order_parameter_array = import_observable(directory, "magnetisation")
-    obs2 = pe.Obs([order_parameter_array[start:]**2], ["magnetisation2"])
-    obs4 = pe.Obs([order_parameter_array[start:]**4], ["magnetisation4"])
+    obs2 = pe.Obs([order_parameter_array[start:]**2], ["magnetisation"])
+    obs4 = pe.Obs([order_parameter_array[start:]**4], ["magnetisation"])
     binder_obs = 1 - (obs4 / (2 * obs2**2))
     binder_obs.gamma_method()
     return binder_obs

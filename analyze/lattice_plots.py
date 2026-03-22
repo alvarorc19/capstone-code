@@ -46,7 +46,7 @@ def do_lattice_smooth_plot(project_path: pathlib.Path, project_name:str, paramet
     config = toml.load(project_path / "config.toml")
 
     fig, ax = plt.subplots()
-    ax.set_title(f"XY Model with J = 1 and T = {config['physical_settings']['temperature']:.2f}")
+    ax.set_title(f"XY Model with $J = 1$ and $T = {config['physical_settings']['temperature']:.2f}/k_B$")
     # # Good cmap for the wrapping of angles
     # im = ax.imshow(generate_lattice(0, import_lattice(project_path,-1), config), cmap="twilight_shifted", vmin = 0, vmax = 2*np.pi)
 
@@ -57,18 +57,20 @@ def do_lattice_smooth_plot(project_path: pathlib.Path, project_name:str, paramet
     # Add colorbar
     cbar = fig.colorbar(im, ax=ax, label='Spin Angle (radians)') 
     cbar.set_ticks([0, np.pi/2, np.pi, (3*np.pi) / 2, 2*np.pi])
-    cbar.set_ticklabels(['0', 'π/2', 'π','3π/2',  '2π'])
+    cbar.set_ticklabels(['0', r'$\pi$/2', r'$\pi$',r'3$\pi$/2',  r'2$\pi$'])
+
+    fig.set_facecolor("#ECEFF4")  
+    ax.set_facecolor("#ECEFF4")    
 
     # # get indices to not show every change
     # stride = 100
     # frame_indices = range(0, 10000, stride)
 
-    frames_ps = fps
     nframes = min(100, lattice_size)
     print("lattice size", lattice_size)
 
     # save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
-    save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" 
+    save_path = project_root.parent / "analyze" /"output"/ "vid_dump" 
     save_path.parent.mkdir(parents = True, exist_ok = True)
     save_path_frame = save_path / "frames"
     save_path_frame.mkdir(parents = True, exist_ok = True)
@@ -78,28 +80,24 @@ def do_lattice_smooth_plot(project_path: pathlib.Path, project_name:str, paramet
         # actual_frame = frame_indices[frame]
         # print(f"Time = {frame}")
         im.set_array(_generate_lattice(frame, import_lattice(project_path,frame), config))
-        # fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=150)
+        # fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=300)
         return [im]
-    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = frames_ps, blit = True, cache_frame_data = False)
-    html = ani.to_jshtml()
+    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = fps, blit = True, cache_frame_data = False)
+    # html = ani.to_jshtml()
     # with open(save_path / f"{project_name}_par{parameter_combination}_lattice.html", "w") as f:
     #     f.write(html)
-    ani.save(save_path / f"{project_name}_par{parameter_combination}_lattice.mp4", writer = "ffmpeg", fps =frames_ps, dpi = 150)
+    ani.save(save_path / f"{project_name}_par{parameter_combination}_lattice.mp4", writer = "ffmpeg", fps =fps, dpi = 300)
 
 
 def do_lattice_arrow_plot(project_path: pathlib.Path, project_name:str, parameter_combination: int, fps:int):
     config = toml.load(project_path / "config.toml")
 
     fig, ax = plt.subplots()
-    ax.set_title(f"XY Model with J = 1 and T = {config['physical_settings']['temperature']:.2f}")
+    ax.set_title(f"XY Model with $J = 1$ and $T = {config['physical_settings']['temperature']:.2f}/k_B$")
     # # Good cmap for the wrapping of angles
     # im = ax.imshow(generate_lattice(0, import_lattice(project_path,-1), config), cmap="twilight_shifted", vmin = 0, vmax = 2*np.pi)
 
-    lattice_size = import_lattice_size(project_path)
-
     x,y,u,v, angles = _get_arrow_data(0, import_lattice(project_path,0), config)
-    # Good cmap for visualising vortices
-
     step = 1
     norm = colors.Normalize(vmin=0, vmax=2*np.pi)
     q= ax.quiver(
@@ -120,16 +118,17 @@ def do_lattice_arrow_plot(project_path: pathlib.Path, project_name:str, paramete
     # Add colorbar
     cbar = fig.colorbar(q, ax=ax, label='Spin Angle (radians)') 
     cbar.set_ticks([0, np.pi/2, np.pi, (3*np.pi) / 2, 2*np.pi])
-    cbar.set_ticklabels(['0', 'π/2', 'π','3π/2',  '2π'])
+    cbar.set_ticklabels(['0', r'$\pi$/2', r'$\pi$',r'3$\pi$/2',  r'2$\pi$'])
     ax.set_aspect('equal')
+
+    fig.set_facecolor("#ECEFF4")  
+    ax.set_facecolor("#ECEFF4")    
 
     # # get indices to not show every change
     # stride = 100
     # frame_indices = range(0, 10000, stride)
 
-    frames_ps = fps
-    nframes = min(100, lattice_size)
-    print("lattice size", lattice_size)
+    nframes = 100
 
     # save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
     save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" 
@@ -137,96 +136,123 @@ def do_lattice_arrow_plot(project_path: pathlib.Path, project_name:str, paramete
     save_path_frame = save_path / "frames"
     save_path_frame.mkdir(parents = True, exist_ok = True)
     print("save path", save_path)
+    plt.tight_layout()
 
     def update(frame):
         # actual_frame = frame_indices[frame]
         # print(f"Time = {frame}")
         x,y,u,v, angles = _get_arrow_data(frame, import_lattice(project_path,frame), config) 
         q.set_UVC(u[::step, ::step],v[::step, ::step],angles[::step, ::step])
-        # fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=150)
+        fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=400, bbox_inches='tight')
         return [q]
-    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = frames_ps, blit = True, cache_frame_data = False)
-    html = ani.to_jshtml()
+    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = fps, blit = True, cache_frame_data = False)
     # with open(save_path / f"{project_name}_par{parameter_combination}_lattice.html", "w") as f:
     #     f.write(html)
-    ani.save(save_path / "arrow_test.mp4", writer = "ffmpeg", fps =frames_ps, dpi = 150)
+    ani.save(save_path / f"{project_name}_arrow_video.mp4", writer = "ffmpeg", fps =fps, dpi = 300)
 
-def do_lattice_temp_plot(project_path: pathlib.Path, project_name:str, fps:int = 5):
+
+def do_lattice_temp_plot_smooth(project_root:pathlib.Path, project_name:str, fps:int = 5, frames_per_iter:int = 10):
+    project_path = project_root/ project_name
+    lattice = import_lattice(project_path / "parameter-config-0", 0)
     config = toml.load(project_path / "parameter-config-0" / "config.toml")
+    frames_per_iter = 4
+    num_dir = 0
+    for dir in project_path.iterdir():
+        if dir.is_dir():
+            num_dir += 1
 
-    fig = plt.figure()
-    gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1.8], hspace=0.15)
-    ax = fig.add_subplot(gs[0])
-    temp_ax = fig.add_subplot(gs[1])
-    ax.set_title("XY Model with J = 1")
-    # # Good cmap for the wrapping of angles
-    # im = ax.imshow(generate_lattice(0, import_lattice(project_path,-1), config), cmap="twilight_shifted", vmin = 0, vmax = 2*np.pi)
+    fig, ax = plt.subplots()
 
-    lattice_size = import_lattice_size(project_path)
-    # Good cmap for visualising vortices
-    im = ax.imshow(_generate_lattice(0, import_lattice(project_path / "parameter-config-0",0), config), cmap="hsv", vmin = 0, vmax = 2*np.pi, interpolation='bilinear', origin = "lower")
+    im = ax.imshow(
+        _generate_lattice(0, lattice, config),
+          cmap="hsv",
+          vmin = 0,
+          vmax = 2*np.pi,
+          interpolation='bilinear',
+          origin = "lower")
 
-    # Add colorbar
-    cbar = fig.colorbar(im, ax=ax, label='Spin Angle (radians)') 
-    cbar.set_ticks([0, np.pi/2, np.pi, (3*np.pi) / 2, 2*np.pi])
-    cbar.set_ticklabels(['0', 'π/2', 'π','3π/2',  '2π'])
+    cbar = fig.colorbar(im, ax=ax, label="Spin angle (radians)")
+    cbar.set_ticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    cbar.set_ticklabels(["0", r"$\pi$/2", r"$\pi$", r"3$\pi$/2", r"2$\pi$"])
 
-     # --- bottom temperature bar ---
-    temp_ax.set_xlim(0, 1)
-    temp_ax.set_ylim(0, 1)
-    temp_ax.set_xticks([])
-    temp_ax.set_yticks([])
-    for spine in temp_ax.spines.values():
-        spine.set_visible(False)
+    ax.set_aspect('equal')
+    fig.set_facecolor("#ECEFF4")  
+    ax.set_facecolor("#ECEFF4")    
 
-    # background bar
-    temp_ax.axhspan(0, 1, color="black", alpha=0.85)
+    nframes = frames_per_iter * num_dir
 
-    temp_text = temp_ax.text(
-        0.5,
-        0.5,
-        f"T = {T0:.2f}",
-        color="white",
-        fontsize=16,
-        fontweight="bold",
-        ha="center",
-        va="center",
-        animated=True,
-    )
-
-    # optional progress marker across temperatures
-    marker = temp_ax.axvline(0.0, color="white", linewidth=3)
-
-
-    # # get indices to not show every change
-    # stride = 100
-    # frame_indices = range(0, 10000, stride)
-
-    frames_ps = fps
-    nframes = min(100, lattice_size)
-    print("lattice size", lattice_size)
-
-    # save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" / f"{project_name}_par_{parameter_combination}_lattice.mp4"
-    save_path = project_path.parent.parent.parent / "analyze" /"output"/ "vid_dump" 
+    save_path = project_root.parent / "analyze" /"output"/ "vid_dump" 
     save_path.parent.mkdir(parents = True, exist_ok = True)
     save_path_frame = save_path / "frames"
     save_path_frame.mkdir(parents = True, exist_ok = True)
     print("save path", save_path)
 
     def update(frame):
-        # actual_frame = frame_indices[frame]
-        # print(f"Time = {frame}")
-        path = project_path / f"parameter-config-{frame}"
-        T = import_physical_parameter(path, "temperature")
-        temp_text.set_text(f"T = {T:.2f}")
-        # move marker from left to right along the bar
-        x = 0 if nframes == 1 else frame / (nframes - 1)
-        marker.set_xdata([x, x])
-        im.set_array(_generate_lattice(frame, import_lattice(path,0), config))
+        current_project = project_path / f"parameter-config-{frame // frames_per_iter}"
+        config = toml.load(current_project / "config.toml")
+        ax.set_title(f"XY model for $J = 1$, $T = {config['physical_settings']['temperature']} / k_B$")
+        im.set_array(_generate_lattice(frame % frames_per_iter, import_lattice(current_project,frame % frames_per_iter), config))
+        return [im]
+    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = fps, blit = True, cache_frame_data = False)
+    ani.save(save_path / f"{project_name}_temp_video.mp4", writer = "ffmpeg", fps =fps, dpi = 300)
+
+
+def do_lattice_temp_plot_arrows(project_root:pathlib.Path, project_name:str, fps:int = 5, frames_per_iter:int = 10):
+    project_path = project_root/ project_name
+    lattice = import_lattice(project_path / "parameter-config-0", 0)
+    config = toml.load(project_path / "parameter-config-0" / "config.toml")
+    frames_per_iter = 4
+    num_dir = 0
+    for dir in project_path.iterdir():
+        if dir.is_dir():
+            num_dir += 1
+
+    fig, ax = plt.subplots()
+
+    x,y,u,v, angles = _get_arrow_data(0, lattice, config)
+    step = 6
+    norm = colors.Normalize(vmin=0, vmax=2*np.pi)
+    q= ax.quiver(
+        x[::step, ::step],
+        y[::step, ::step],
+        u[::step, ::step],
+        v[::step, ::step],
+        angles[::step, ::step],
+        cmap="hsv",
+        norm=norm,
+        pivot="mid",
+        scale=15,
+        width=0.003,
+        headwidth=5,
+        headlength=10,
+        headaxislength=3.5,
+    )
+
+    cbar = fig.colorbar(q, ax=ax, label="Spin angle (radians)")
+    cbar.set_ticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    cbar.set_ticklabels(["0", r"$\pi$/2", r"$\pi$", r"3$\pi$/2", r"2$\pi$"])
+
+    ax.set_aspect('equal')
+    # fig.set_facecolor("#ECEFF4")  
+    # ax.set_facecolor("#ECEFF4")    
+
+    nframes = frames_per_iter * num_dir
+
+    save_path = project_root.parent / "analyze" /"output"/ "vid_dump" 
+    save_path.parent.mkdir(parents = True, exist_ok = True)
+    save_path_frame = save_path / "frames"
+    save_path_frame.mkdir(parents = True, exist_ok = True)
+    print("save path", save_path)
+
+    def update(frame):
+        current_project = project_path / f"parameter-config-{frame // frames_per_iter}"
+        config = toml.load(current_project / "config.toml")
+        ax.set_title(f"XY model for $J = 1$, $T = {config['physical_settings']['temperature']} / k_B$")
+        x,y,u,v, angles = _get_arrow_data(frame, import_lattice(current_project,frame % frames_per_iter), config) 
+        q.set_UVC(u[::step, ::step],v[::step, ::step],angles[::step, ::step])
         # fig.savefig(save_path_frame / f"frame_{frame:03d}.png", dpi=150)
-        return [im, temp_text, marker]
-    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = frames_ps, blit = True, cache_frame_data = False)
-    html = ani.to_jshtml()
-    # with open(save_path / f"{project_name}_par{parameter_combination}_lattice.html", "w") as f:
-    #     f.write(html)
-    ani.save(save_path / f"{project_name}_temp_lattice.mp4", writer = "ffmpeg", fps =frame_ps, dpi = 150)
+        return [q]
+
+    ani = FuncAnimation(fig, update, frames = tqdm(range(nframes), desc="Rendering"), interval = fps, blit = True, cache_frame_data = False)
+    ani.save(save_path / f"{project_name}_arrow_temp_video.mp4", writer = "ffmpeg", fps =fps, dpi = 300)
+

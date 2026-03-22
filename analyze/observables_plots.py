@@ -277,6 +277,8 @@ def do_observable_plot(
         observable_array = np.append(observable_array, observable_obs.value)
         observable_error = np.append(observable_error, observable_obs.dvalue)
 
+    print(f"{observable} array {observable_array}({observable_error})")
+
     fig, ax = plt.subplots(
         ncols=1,
         nrows=1
@@ -553,7 +555,7 @@ def do_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:
         unique_lengths = global_config["physical_settings"]["L"]
         unique_temp = global_config["physical_settings"]["temperature"]
 
-        start = 200
+        start = 1000
         for direc in params:
             temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
             length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
