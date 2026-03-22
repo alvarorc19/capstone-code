@@ -13,6 +13,7 @@ from observables_plots import (
     do_finite_size_analysis_susceptibility,
     do_order_parameter_plot,
     do_renormalisation_plot,
+    do_biggest_L_renormalisation_plot,
 )
 
 from generate_critical_exponents import (
@@ -25,12 +26,12 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "critical_temp_test"
-    is_deep = False
-    start_step = 100
+    project_name = "t30_5l16-256_dim2_10-5sweeps"
+    is_deep = True
+    start_step = 1000
     # parameter_combination = 2
-    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
-    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     project_path = project_root / project_name
     # config = toml.load(project_path / "config.toml")
     observables = [
@@ -55,8 +56,9 @@ def main():
         r"Specific Heat per spin $c_H$"
     ]
 
-    # do_order_parameter_plot(project_path, is_deep,0)
-    # do_renormalisation_plot(project_path, is_deep, start_step)
+    do_order_parameter_plot(project_path, is_deep,0)
+    do_renormalisation_plot(project_path, is_deep, start_step)
+    do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
     for observable, observables_title in zip(observables, observables_titles):
