@@ -158,7 +158,7 @@ def compute_susceptibility_per_spin(directory:pathlib.Path, start:int = 0) -> pe
     x_obs = pe.Obs([x_magnetisation[start:] / N], ["magnetisation"])
     y_obs = pe.Obs([y_magnetisation[start:] / N], ["magnetisation"])
     obs2 = pe.Obs([magnetisation_array[start:]**2], ["magnetisation"])
-    X_obs = ((obs2 - x_obs ** 2 - y_obs**2) * N) / temp
+    X_obs = ((obs2 - obs**2) * N) / temp
     X_obs.gamma_method()
     return X_obs
 
