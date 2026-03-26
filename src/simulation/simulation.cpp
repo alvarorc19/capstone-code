@@ -424,32 +424,34 @@ void Simulation::initialise_model() {
 void Simulation::initialise_writing() {
     std::filesystem::path filename = parameters.project_folder_path / std::filesystem::path("results.h5");
     this->file = std::make_unique<HighFive::File>(filename.string(), HighFive::File::Truncate);
-    
-    // Lattice dataset, stores only last sweep I would do, last N iterations.
-    HighFive::DataSpace lattice_space({100, parameters.N});
-
     // Define chunks, how data is stored
     std::vector<hsize_t> chunk_dims = {30, parameters.N};
-    HighFive::DataSetCreateProps lattice_props;
-    lattice_props.add(HighFive::Chunking(chunk_dims));
+    
+    if (parameters.dim == 2){
+        // Lattice dataset, stores only last sweep I would do, last N iterations.
+        HighFive::DataSpace lattice_space({100, parameters.N});
 
-    if (parameters.model_type == "xy") {
-        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-            file->createDataSet<double>(
-                "lattice",
-                lattice_space,
-                lattice_props
-            )
-        );
-    }
-    else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
-        parameters.lattice_set = std::make_unique<HighFive::DataSet>(
-            file->createDataSet<int>(
-                "lattice",
-                lattice_space,
-                lattice_props
-            )
-        );
+        HighFive::DataSetCreateProps lattice_props;
+        lattice_props.add(HighFive::Chunking(chunk_dims));
+
+        if (parameters.model_type == "xy") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<double>(
+                    "lattice",
+                    lattice_space,
+                    lattice_props
+                )
+            );
+        }
+        else if (parameters.model_type == "ising" or parameters.model_type == "potts") {
+            parameters.lattice_set = std::make_unique<HighFive::DataSet>(
+                file->createDataSet<int>(
+                    "lattice",
+                    lattice_space,
+                    lattice_props
+                )
+            );
+        }
     }
 
     // Create observables datasets
@@ -692,7 +694,7 @@ void Simulation::rg_run_3d() {
     final_rg_energy1.reserve(modulo);
     final_rg_energy2.reserve(modulo);
 
-    for (int i = 0; i < modulo-1; i++){
+    for (int i = 0; i < modulo; i++){
         do_cluster_sweep();
         final_energy.emplace_back(model->compute_total_energy());
         final_x_magnetisation.emplace_back(model->compute_spin_magnetic_term(0));
@@ -711,43 +713,6 @@ void Simulation::rg_run_3d() {
         final_rg_energy2.emplace_back(model->compute_rg_energy(b2, parameters.N, neighbours_table2, parameters.dim));
         time_step++;
     }
-
-
-    // Record last 100 steps of the lattice
-    cluster_size.clear();
-    spins_flipped = 0;
-    int flip;
-    for (int i = 0; i < parameters.N / 64; i++){
-        flip = spins_flipped; 
-        do_cluster_step();
-        cluster_size.emplace_back(spins_flipped - flip);
-    }
-
-    for (int i = 0; i < 100; i++){
-        flip = spins_flipped; 
-        do_cluster_step();
-        cluster_size.emplace_back(spins_flipped - flip);
-        #pragma omp critical(HDF5)
-        {
-            write_lattice(i);
-        }
-    }
-    
-    final_energy.emplace_back(model->compute_total_energy());
-    final_x_magnetisation.emplace_back(model->compute_spin_magnetic_term(0));
-    final_y_magnetisation.emplace_back(model->compute_spin_magnetic_term(1));
-    final_average_cluster_size.emplace_back(compute_average_cluster_size(cluster_size));
-    // RG 1
-    model->compute_reduced_lattice_3d(b1, parameters.N, parameters.L);
-    final_rg_x_magnetisation1.emplace_back(model->compute_rg_spin_magnetic_term(0));
-    final_rg_y_magnetisation1.emplace_back(model->compute_rg_spin_magnetic_term(1));
-    final_rg_energy1.emplace_back(model->compute_rg_energy(b1, parameters.N, neighbours_table1, parameters.dim));
-    // RG 2
-    model->compute_reduced_lattice_3d(b2, parameters.N, parameters.L);
-    final_rg_x_magnetisation2.emplace_back(model->compute_rg_spin_magnetic_term(0));
-    final_rg_y_magnetisation2.emplace_back(model->compute_rg_spin_magnetic_term(1));
-    final_rg_energy2.emplace_back(model->compute_rg_energy(b2, parameters.N, neighbours_table2, parameters.dim));
-    time_step++;
 
     #pragma omp critical (HDF5)
     {
