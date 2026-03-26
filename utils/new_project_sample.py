@@ -54,6 +54,7 @@ temp_array = []
 length_array = []
 
 global_parameters = copy.deepcopy(parameters)
+hpc = True
 
 
 if (temp_array and not length_array):
