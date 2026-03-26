@@ -9,6 +9,7 @@ sys.path.insert(0, str(project_root))
 
 import toml
 import json
+import pandas as pd
 import pyerrors as pe
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,6 +32,8 @@ from compute_observables import (
     compute_specific_heat_per_spin,
     compute_renormalised_energy,
     compute_renormalised_magnetisation,
+    compute_cluster_susceptibility,
+    compute_cluster_size,
 )
 from utils.h5_utils import (
     import_observable,
@@ -50,6 +53,8 @@ def _find_observable_function(observable:str):
         "energy_per_spin":compute_normalised_energy,
         "susceptibility_per_spin":compute_susceptibility_per_spin,
         "specific_heat_per_spin":compute_specific_heat_per_spin,
+        "cluster_susceptibility":compute_cluster_susceptibility,
+        "correlation_length":compute_cluster_size,
     }
     return observable_functions[observable]
 
@@ -227,6 +232,60 @@ def _make_finite_size_plot(
     return scatter_array, ax
 
 
+def get_observables_csv(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        # rg:bool = False
+    ):
+
+    saving_path = directory
+    df = pd.DataFrame()
+    observables = ["magnetisation", "energy", "susceptibility", "specific_heat", "energy_per_spin", "susceptibility_per_spin", "specific_heat_per_spin", "cluster_susceptibility"]
+
+    if is_deep:
+        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        params = []
+        for dir in sub_dir:
+            if dir.is_dir():
+                for direc in dir.iterdir():
+                    if direc.is_dir():
+                        params.append(direc)
+    else:
+        params = [x for x in directory.iterdir() if x.is_dir()]
+
+    temp_array = np.array([])
+    length_array = np.array([])
+
+    for direc in params:
+        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
+        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
+    df["temperature"] = temp_array
+    df["L"] = length_array
+
+
+    for observable in observables:
+        observable_array = np.array([])
+        observable_error = np.array([])
+        observable_tauint = np.array([])
+        observable_obs_array = np.array([])
+        compute_observable = _find_observable_function(observable)
+        for direc in params:
+            observable_obs = compute_observable(direc, start)
+            observable_obs_array = np.append(observable_obs_array, observable_obs)
+            observable_array = np.append(observable_array, observable_obs.value)
+            observable_error = np.append(observable_error, observable_obs.dvalue)
+            observable_tauint = np.append(observable_tauint, observable_obs.e_tauint["ens"])
+
+        df[observable + "_value"] = observable_array
+        df[observable + "_error"] = observable_error
+        df[observable + "_tau_int"] = observable_tauint
+
+    df = df.sort_values(["L", "temperature"]).reset_index(drop = True)
+    df.to_csv(saving_path / "ensemble_observables.csv", index = False)
+    print("Finished writing to ", saving_path / "ensemble_observables.csv")
+
+
 
 def do_observable_plot(
         observable:str,
@@ -283,8 +342,8 @@ def do_observable_plot(
         nrows=1
     )
 
+    cmap = plt.cm.tab20
     if x_data == "temperature":
-        cmap = plt.cm.tab20
 
         if isinstance(unique_lengths, list):
             length_array,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
@@ -336,15 +395,15 @@ def do_observable_plot(
             )
 
     elif x_data == "length":
-        _,sorted_length = zip(*sorted(zip(temp_array, length_array)))
-        cmap = plt.cm.tab20
+        length_array,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
         colors = cmap(np.arange(len(unique_temp)*2))
 
         for i,t in enumerate(unique_temp):
             ax = _add_scatter_data(
                 axs = ax,
                 xaxis = length_array[len(unique_lengths) * i : (i+1) * len(unique_lengths)],
-                yaxis = observable_array,
+                yaxis = observable_array[i * len(unique_lengths):(i+1)*len(unique_lengths)],
+                yerr = observable_error[i * len(unique_lengths):(i+1)*len(unique_lengths)],
                 data_label = f"$T = {t}$",
                 linear_fit = linear_fit,
                 log_fit = log_fit,
@@ -424,10 +483,14 @@ def _add_format_plot(
     # Apply formatting
     axs.xaxis.set_major_formatter(latex_formatter)
     axs.yaxis.set_major_formatter(latex_formatter)
-    axs.yaxis.set_minor_formatter(latex_formatter)
-    axs.xaxis.set_minor_formatter(latex_formatter)
+    # axs.yaxis.set_minor_formatter(latex_formatter)
+    # axs.xaxis.set_minor_formatter(latex_formatter)
 
     axs.legend()
+    axs.grid()
+    axs.minorticks_on()
+    axs.tick_params(axis='both', which='major', direction='in', length=7, top=True, right = True)
+    axs.tick_params(axis='both', which='minor', direction='in', length=4, top=True, right = True)
 
     return axs
 

@@ -14,6 +14,7 @@ from observables_plots import (
     do_order_parameter_plot,
     do_renormalisation_plot,
     do_biggest_L_renormalisation_plot,
+    get_observables_csv,
 )
 
 from generate_critical_exponents import (
@@ -26,12 +27,12 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "t30_5l16-256_dim2_10-5sweeps"
-    is_deep = True
-    start_step = 1000
+    project_name = "rg_test2"
+    is_deep = False
+    start_step = 200
     # parameter_combination = 2
-    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
-    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     project_path = project_root / project_name
     # config = toml.load(project_path / "config.toml")
     observables = [
@@ -42,7 +43,9 @@ def main():
         # "binder_cumulant",
         "energy_per_spin",
         "susceptibility_per_spin",
-        "specific_heat_per_spin"
+        "specific_heat_per_spin",
+        "cluster_susceptibility",
+        "correlation_length",
     ]
 
     observables_titles = [
@@ -53,26 +56,29 @@ def main():
         # r"Binder cumulant $U_\infty$",
         r"Energy per spin $e$",
         r"Magnetic Susceptibility per spin $\chi / N$",
-        r"Specific Heat per spin $c_H$"
+        r"Specific Heat per spin $c_H$",
+        r"Susceptibility $\chi$",
+        r"Correlation length $\xi = \langle n \rangle$"
     ]
 
     # do_order_parameter_plot(project_path, is_deep,0)
-    do_renormalisation_plot(project_path, is_deep, start_step)
+    # do_renormalisation_plot(project_path, is_deep, start_step)
+    get_observables_csv(project_path, is_deep, start_step)
     # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
-    # for observable, observables_title in zip(observables, observables_titles):
-    #     do_observable_plot(
-    #         observable = observable,
-    #         observable_title = observables_title,
-    #         directory = project_path, 
-    #         is_deep = is_deep,
-    #         x_data = "temperature",
-    #         log_plot = False,
-    #         log_fit = False,
-    #         linear_fit = False,
-    #         start = start_step,
-    #     )
+    for observable, observables_title in zip(observables, observables_titles):
+        do_observable_plot(
+            observable = observable,
+            observable_title = observables_title,
+            directory = project_path, 
+            is_deep = is_deep,
+            x_data = "temperature",
+            log_plot = False,
+            log_fit = False,
+            linear_fit = False,
+            start = start_step,
+        )
 
 
     # do_finite_size_analysis_susceptibility(project_path, is_deep, start_step)
