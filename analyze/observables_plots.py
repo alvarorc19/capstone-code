@@ -236,7 +236,7 @@ def get_observables_csv(
         directory:pathlib.Path, 
         is_deep:bool = False,
         start:int = 0,
-        # rg:bool = False
+        rg:bool = False
     ):
 
     saving_path = directory
@@ -268,11 +268,9 @@ def get_observables_csv(
         observable_array = np.array([])
         observable_error = np.array([])
         observable_tauint = np.array([])
-        observable_obs_array = np.array([])
         compute_observable = _find_observable_function(observable)
         for direc in params:
             observable_obs = compute_observable(direc, start)
-            observable_obs_array = np.append(observable_obs_array, observable_obs)
             observable_array = np.append(observable_array, observable_obs.value)
             observable_error = np.append(observable_error, observable_obs.dvalue)
             observable_tauint = np.append(observable_tauint, observable_obs.e_tauint["ens"])
@@ -280,6 +278,40 @@ def get_observables_csv(
         df[observable + "_value"] = observable_array
         df[observable + "_error"] = observable_error
         df[observable + "_tau_int"] = observable_tauint
+
+    if rg:
+        dim = import_physical_parameter(direc, "dimension")
+        if dim == 2:
+            blist = [2,4,16]
+
+        elif dim ==3:
+            blist = [2,4]
+
+
+        for b in blist:
+            magnetisation_array = np.array([])
+            magnetisation_error = np.array([])
+            magnetisation_tauint = np.array([])
+            energy_array = np.array([])
+            energy_error = np.array([])
+            energy_tauint = np.array([])
+            for direc in params:
+                magnetisation_obs = compute_renormalised_magnetisation(direc, start, b)
+                magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
+                magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+                magnetisation_tauint = np.append(magnetisation_tauint, magnetisation_obs.e_tauint["ens"])
+
+                energy_obs = compute_renormalised_energy(direc, start, b)
+                energy_array = np.append(energy_array, energy_obs.value)
+                energy_error = np.append(energy_error, energy_obs.dvalue)
+                energy_tauint = np.append(energy_tauint, energy_obs.e_tauint["ens"])
+            df[f"magnetisation_b_{b}"] = magnetisation_array
+            df[f"magnetisation_b_{b}_error"] = magnetisation_error
+            df[f"magnetisation_b_{b}_tauint"] = magnetisation_tauint
+            df[f"energy_b_{b}"] = energy_array
+            df[f"energy_b_{b}_error"] = energy_error
+            df[f"energy_b_{b}_tauint"] = energy_tauint
+        
 
     df = df.sort_values(["L", "temperature"]).reset_index(drop = True)
     df.to_csv(saving_path / "ensemble_observables.csv", index = False)

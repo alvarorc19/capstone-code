@@ -63,7 +63,7 @@ def main():
 
     # do_order_parameter_plot(project_path, is_deep,0)
     # do_renormalisation_plot(project_path, is_deep, start_step)
-    get_observables_csv(project_path, is_deep, start_step)
+    get_observables_csv(project_path, is_deep, start_step, True)
     # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
