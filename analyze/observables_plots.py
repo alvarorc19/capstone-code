@@ -41,8 +41,6 @@ from utils.h5_utils import (
 )
 
 
-
-
 def _find_observable_function(observable:str):
     observable_functions = {
         "magnetisation":compute_average_magnetisation,
@@ -57,180 +55,6 @@ def _find_observable_function(observable:str):
         "correlation_length":compute_cluster_size,
     }
     return observable_functions[observable]
-
-def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool = False, start: int = 0):
-    observable = "susceptibility"
-    saving_path = directory.parent.parent / "analyze" / "output"/"vid_dump"
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
-
-    else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
-
-    temp_array = np.array([])
-    length_array = np.array([])
-    observable_obs_array = np.array([])
-    observable_array = np.array([])
-    observable_error = np.array([])
-
-    plt.tight_layout()
-
-    compute_observable = _find_observable_function(observable)
-
-    with open(directory / "global_parameters.json", "r") as f:
-        global_config = json.load(f)
-    unique_lengths = global_config["physical_settings"]["L"]
-    unique_temp = global_config["physical_settings"]["temperature"]
-
-
-    for direc in params:
-        print("direc", direc)
-        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        observable_obs = compute_observable(direc, start)
-        observable_obs_array = np.append(observable_obs_array, observable_obs)
-        observable_array = np.append(observable_array, observable_obs.value)
-        observable_error = np.append(observable_error, observable_obs.dvalue)
-
-
-    length_array,temp_array, observable_obs_array = map(np.array,zip(*sorted(zip(length_array, temp_array, observable_obs_array))))
-
-    cmap = plt.cm.tab20
-    colors = cmap(np.arange(len(unique_lengths)*2))
-
-    fig, ax = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
-    fig.subplots_adjust(bottom=0.25)
-    
-    # plot it first
-    initial_tc = 0.8
-    initial_gamma = 1.
-    initial_nu = 1.
-
-    for i,(obs,L) in enumerate(zip(observable_obs_array, length_array)):
-        reduced_susc_obs = compute_susceptibility_scaling_function(obs, L, initial_gamma, initial_nu)
-        observable_array[i] = reduced_susc_obs.value
-        observable_error[i] = reduced_susc_obs.dvalue
-
-    reduced_temp = compute_reduced_temperature(temp_array, initial_tc)
-    
-    scatter_array, ax = _make_finite_size_plot(ax, reduced_temp, unique_lengths, unique_temp, observable_array, observable_error, colors)
-
-    ax = _add_format_plot(
-        axs = ax,
-        xlabel="reduced temperature $t$",
-        ylabel=r"Susceptibility scaling function $\tilde{\chi}$",
-        title = r"Scaled susceptibilty $\tilde{\chi}$ vs reduced temperature $t$",
-    )
-
-    # create sliders
-    ax_slider1 = plt.axes([0.2, 0.12, 0.6, 0.03])
-    gamma_slider = Slider(ax_slider1, r'$\gamma$ exponent', 0.1, 5.0, valinit=0.1, valstep=0.1)
-    ax_slider2 = plt.axes([0.2, 0.08, 0.6, 0.03])
-    nu_slider = Slider(ax_slider2, r'$\nu$ exponent', 0.1, 5.0, valinit=0.1, valstep=0.1)
-    ax_slider3 = plt.axes([0.2, 0.04, 0.6, 0.03])
-    critical_temp_slider = Slider(ax_slider3, 'Critical temperature', 0.1, 1.0, valinit=0.1, valstep=0.1)
-
-    # create update function
-    def update(val):
-        for i,(obs,L) in enumerate(zip(observable_obs_array, length_array)):
-            reduced_susc_obs = compute_susceptibility_scaling_function(obs, L, gamma_slider.val, nu_slider.val)
-            observable_array[i] = reduced_susc_obs.value
-            observable_error[i] = reduced_susc_obs.dvalue
-
-        reduced_temp = compute_reduced_temperature(temp_array, critical_temp_slider.val)
-
-        for i,plot in enumerate(scatter_array):
-            plotline, caplines, barlinecols = plot
-
-            x_data = reduced_temp[i * len(unique_temp): (i+1) * len(unique_temp)]
-            y_data =observable_array[i * len(unique_temp): (i+1)*len(unique_temp)] 
-            y_err = observable_error[i * len(unique_temp): (i+1)*len(unique_temp)]
-
-            # value to update
-            plotline.set_ydata(y_data)
-            plotline.set_xdata(x_data)
-
-            # Update error bar segments
-            segments = [[[xi, yi - ei], [xi, yi + ei]] for xi, yi, ei in zip(x_data, y_data, y_err)]
-            barlinecols[0].set_segments(segments)
-
-            if caplines:
-                caplines[0].set_xdata(x_data)
-                caplines[0].set_ydata(y_data - y_err)
-                caplines[1].set_xdata(x_data)
-                caplines[1].set_ydata(y_data + y_err)
-
-        ax.relim()
-        ax.autoscale_view()
-        fig.canvas.draw_idle()
-
-    gamma_slider.on_changed(update)
-    nu_slider.on_changed(update)
-    critical_temp_slider.on_changed(update)
-
-    saving_path.mkdir(parents = True, exist_ok = True)
-
-    # Iterate over everything
-    gamma_values = np.arange(0.7, 3.0, 0.1)
-    nu_values = np.arange(0.7, 2.4, 0.1)
-    tc_values = np.arange(0.4, 1.0, 0.1)
-
-    # If you want all combinations, use itertools
-    frames = list(itertools.product(gamma_values, nu_values, tc_values))
-
-    def animate(frame):
-        gamma, nu, tc = frame
-        gamma_slider.set_val(gamma)
-        nu_slider.set_val(nu)
-        critical_temp_slider.set_val(tc)
-        update(None)
-
-    ani = FuncAnimation(fig, animate, frames=frames, interval=100)
-    # ani.save(saving_path / f"{directory.name}_finite_size_susceptibility.mp4", writer='ffmpeg', fps=10)
-
-    with tqdm(total=len(frames), desc="Saving animation") as pbar:
-        ani.save(
-            saving_path / f"{directory.name}_finite_size_susceptibility.mp4",
-            writer='ffmpeg',
-            fps=10,
-            extra_args=['-vcodec', 'libx264', '-preset', 'fast'],
-            progress_callback=lambda i, n: pbar.update(1)
-        )
-
-    # plt.show()
-
-def _make_finite_size_plot(
-        ax,
-        reduced_temp,
-        unique_lengths,
-        unique_temp,
-        scaled_susceptibility,
-        scaled_susceptibility_error,
-        colors,
-    ):
-    scatter_array=[]
-
-    for i,l in enumerate(unique_lengths):
-        xaxis = reduced_temp[i*len(unique_temp): (i+1)*len(unique_temp)]
-        yaxis = scaled_susceptibility[i * len(unique_temp):(i+1)*len(unique_temp)]
-
-        assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
-
-        yerr = scaled_susceptibility_error[i * len(unique_temp):(i+1)*len(unique_temp)]
-        error_plot = ax.errorbar(xaxis, yaxis, yerr = yerr, label = f"$L = {l}$", color = colors[2*i], fmt = ".")
-        scatter_array.append(error_plot)
-
-    return scatter_array, ax
-
 
 def get_observables_csv(
         directory:pathlib.Path, 
@@ -472,15 +296,22 @@ def _add_scatter_data(
         linear_fit:bool = False,
         log_fit:bool = False,
         main_color: str = 'k',
-        secondary_color: str = 'coral'
+        secondary_color: str = 'coral',
+        marker: str = ".",
     ) -> plt.axes:
 
     assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
+
+    # Sorting
+    idx = np.argsort(xaxis)
+    xaxis = xaxis[idx]
+    yaxis = yaxis[idx]
+    yerr = yerr[idx]
     
     if data_label != "":
-        axs.errorbar(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color, fmt = ".")
+        axs.errorbar(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color, fmt = marker)
     else:
-        axs.errorbar(xaxis, yaxis, yerr = yerr,color = main_color, fmt = ".")
+        axs.errorbar(xaxis, yaxis, yerr = yerr,color = main_color, fmt = marker)
 
 
     if linear_fit:
@@ -612,15 +443,19 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
         fig_susc.savefig(saving_path / f"{direc.name}_susceptibility_time.pdf", bbox_inches = "tight")
         plt.close(fig_susc)
 
-def do_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
-    plt.tight_layout()
+
+def do_magnetisation_inflection_plot(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0
+    ):
 
     if is_deep:
-        saving_path = directory.parent.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
+        saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
     else:
-        saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
-    saving_path.mkdir(parents = True, exist_ok = True)
-    print("save path : ", saving_path)
+        saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    plt.tight_layout()
+
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
         params = []
@@ -632,272 +467,128 @@ def do_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:
     else:
         params = [x for x in directory.iterdir() if x.is_dir()]
 
-    fig_mag, ax1 = plt.subplots(
+    temp_array = np.array([])
+    length_array = np.array([])
+    magnetisation_array = np.array([])
+    magnetisation_error = np.array([])
+
+    with open(directory / "global_parameters.json", "r") as f:
+        global_config = json.load(f)
+    unique_lengths = global_config["physical_settings"]["L"]
+    unique_temp = global_config["physical_settings"]["temperature"]
+
+
+    for direc in params:
+        print("direc", direc)
+        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
+        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
+        magnetisation_obs = compute_average_magnetisation(direc, start)
+        magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
+        magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+
+
+    fig, ax = plt.subplots(
         ncols=1,
         nrows=1
     )
 
-    fig_energy, ax2 = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
-
-    b_list = [1,2,4,16]
     cmap = plt.cm.tab20
-    colors = cmap(np.arange(10))
-    markers = ['.-',':.','-.','.-',':.','-.','.-',':.','-.']
-    for i,b in enumerate(b_list):
-        temp_array = np.array([])
-        length_array = np.array([])
-        magnetisation_array = np.array([])
-        magnetisation_error = np.array([])
-        magnetisation_obs_array = np.array([])
-        energy_array = np.array([])
-        energy_error = np.array([])
-        energy_obs_array = np.array([])
+    if isinstance(unique_lengths, list):
+        length_array,temp_array, magnetisation_array, magnetisation_error = zip(*sorted(zip(length_array, temp_array, magnetisation_array, magnetisation_error)))
+        colors = cmap(np.arange(len(unique_lengths)*2))
+        for i,l in enumerate(unique_lengths):
+            xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)]
+            yaxis = magnetisation_array[i * len(unique_temp):(i+1)*len(unique_temp)]
+            yerr = magnetisation_error[i * len(unique_temp):(i+1)*len(unique_temp)]
+            # Sorting
+            idx = np.argsort(xaxis)
+            xaxis = xaxis[idx]
+            yaxis = yaxis[idx]
+            yerr = yerr[idx]
+            x_infl, y_infl, infl_err = _find_inflection_points(xaxis, yaxis)
+            ax = _add_scatter_data(
+                axs = ax,
+                xaxis = xaxis,
+                yaxis = yaxis,
+                yerr = yerr,
+                data_label = f"$L = {l}$",
+                main_color = colors[i],
+                secondary_color = colors[i+1],
+                marker = ".-",
+            )
+            ax.errorbar(x_infl, y_infl, infl_err, label="Inflection points", color = "r")
 
-        with open(directory / "global_parameters.json", "r") as f:
-            global_config = json.load(f)
-        unique_lengths = global_config["physical_settings"]["L"]
-        unique_temp = global_config["physical_settings"]["temperature"]
+        ax = _add_format_plot(
+            axs = ax,
+            xlabel="Temperature, $T$",
+            ylabel=r"Magnetisation $\langle \mathbf{m} \rangle$",
+            title = f"Magnetisation vs Temperature, inflection points",
+        )
+    elif isinstance(unique_lengths, int):
+        l = unique_lengths
+        i = 0
+        colors = cmap([0,1])
+        xaxis = temp_array
+        yaxis = magnetisation_array
+        yerr = magnetisation_error
+        # Sorting
+        idx = np.argsort(xaxis)
+        xaxis = xaxis[idx]
+        yaxis = yaxis[idx]
+        yerr = yerr[idx]
+        x_infl, y_infl, infl_err = _find_inflection_points(xaxis, yaxis)
+        print("x_infl ",x_infl) 
+        print("y_infl ",y_infl) 
+        print("ingl_Er ",infl_err) 
+        ax = _add_scatter_data(
+            axs = ax,
+            xaxis = temp_array,
+            yaxis = magnetisation_array,
+            yerr = magnetisation_error,
+            data_label = f"$L = {l}$",
+            main_color = colors[i],
+            secondary_color = colors[i+1],
+            marker = ".-",
+        )
+        ax.errorbar(x_infl, y_infl, infl_err, label="Inflection points", color = "r", fmt=".")
 
-        start = 1000
-        for direc in params:
-            temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-            length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-            magnetisation_obs = compute_renormalised_magnetisation(direc, start, b)
-            magnetisation_obs_array = np.append(magnetisation_obs_array, magnetisation_obs)
-            magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
-            magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+        ax = _add_format_plot(
+            axs = ax,
+            xlabel="Temperature, $T$",
+            ylabel=r"Magnetisation $\langle \mathbf{m} \rangle$",
+            title = f"Magnetisation vs Temperature, inflection points",
+        )
 
-            energy_obs = compute_renormalised_energy(direc, start, b)
-            energy_obs_array = np.append(energy_obs_array, energy_obs)
-            energy_array = np.append(energy_array, energy_obs.value)
-            energy_error = np.append(energy_error, energy_obs.dvalue)
-
-
-        # temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
-        length_array, temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(length_array,temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
-
-        if type(unique_lengths) == int:
-            unique_lengths = [unique_lengths]
-        for j, l in enumerate(unique_lengths):
-            xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-            yaxis = np.array(magnetisation_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-            yerr = np.array(magnetisation_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-            ax1.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[i], fmt = markers[j])
-
-            xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-            yaxis = np.array(energy_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-            yerr = np.array(energy_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-            ax2.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[i], fmt = markers[j])
-
-    # ax2.axvline(x = 0.89, color = 'r', linewidth=0.8, label="True $k_BT_{KT} = 0.89$")
-    # ax2.axvline(x = 0.96, color = 'b', linewidth=1, label="Predicted $k_BT_{KT} = 0.96$")
-        
-    ax1.set_xlabel(r"Temperature $T$")
-    ax1.set_ylabel(r"Magnetisation $m$")
-    ax1.set_title(f"RG Monte Carlo for the magnetisation for $b = ${b_list} and $L = ${l}")
-    ax1.legend()
-    ax1.grid()
-    ax1.minorticks_on()
-    ax1.tick_params(axis='both', which='major', direction='in', length=7, top=True, right = True)
-    ax1.tick_params(axis='both', which='minor', direction='in', length=4, top=True, right = True)
-
-    ax2.set_xlabel(r"Temperature $T$")
-    ax2.set_ylabel(r"Energy per spin $e$")
-    ax2.set_title(f"RG Monte Carlo")
-    ax2.legend()
-    ax2.grid()
-    ax2.minorticks_on()
-    ax2.tick_params(axis='both', which='major', direction='in', length=7, top=True, right = True)
-    ax2.tick_params(axis='both', which='minor', direction='in', length=4, top=True, right = True)
-    fig_energy.set_facecolor("#ECEFF4")  
-    ax2.set_facecolor("#ECEFF4")    
-    # ax2.set_xticks(list(ax2.get_xticks()) + [np.pi/2, 0.917])
-
-    fig_mag.savefig(saving_path / f"{direc.name}_renormalised_magnetisation.pdf", bbox_inches = "tight")
-    fig_energy.savefig(saving_path / f"{direc.name}_renormalised_energy.pdf", bbox_inches = "tight")
-
-def do_biggest_L_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
-    plt.tight_layout()
-
-    saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
     saving_path.mkdir(parents = True, exist_ok = True)
-    print("save path : ", saving_path)
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
-    else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
+    fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf")
 
-    fig_mag, ax1 = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
+def _find_inflection_points(x:np.ndarray, y:np.ndarray):
+    assert len(y) == len(x), "magnetisation and temp should be same length" 
 
-    fig_energy, ax2 = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
+    dy = np.gradient(y, x)
+    d2y = np.gradient(dy, x)
 
-    b_list = [1,2,4,16]
-    cmap = plt.cm.tab20
-    colors = cmap(np.arange(10))
-    markers = ['.-',':.','-.','.-',':.','-.','.-',':.','-.']
-    for i,b in enumerate(b_list):
-        temp_array = np.array([])
-        length_array = np.array([])
-        magnetisation_array = np.array([])
-        magnetisation_error = np.array([])
-        magnetisation_obs_array = np.array([])
-        energy_array = np.array([])
-        energy_error = np.array([])
-        energy_obs_array = np.array([])
+    refined_x = []
+    refined_y = []
+    errors = []
 
-        with open(directory / "global_parameters.json", "r") as f:
-            global_config = json.load(f)
-        unique_lengths = global_config["physical_settings"]["L"]
-        unique_temp = global_config["physical_settings"]["temperature"]
+    for i in range(len(d2y) - 1):
+        if d2y[i] == 0:
+            refined_x.append(x[i])
+            errors.append(0)
+        elif d2y[i] * d2y[i+1] < 0:
+            x0, x1 = x[i], x[i+1]
+            y0, y1 = d2y[i], d2y[i+1]
 
-        start = 1000
-        for direc in params:
-            temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-            length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-            magnetisation_obs = compute_renormalised_magnetisation(direc, start, b)
-            magnetisation_obs_array = np.append(magnetisation_obs_array, magnetisation_obs)
-            magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
-            magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+            x_zero = x0 - y0 * (x1 - x0) / (y1 - y0)
 
-            energy_obs = compute_renormalised_energy(direc, start, b)
-            energy_obs_array = np.append(energy_obs_array, energy_obs)
-            energy_array = np.append(energy_array, energy_obs.value)
-            energy_error = np.append(energy_error, energy_obs.dvalue)
+            y0, y1 = y[i], y[i + 1]
+            y_zero = y0 + (y1 - y0) * (x_zero - x0) / (x1 - x0)
 
 
-        # temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
-        length_array, temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(length_array,temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
+            refined_x.append(x_zero)
+            refined_y.append(y_zero)
 
-        if type(unique_lengths) == int:
-            unique_lengths = [unique_lengths]
-        for j, l in enumerate(unique_lengths):
-            if ((b == 1) or (l==256)):
-                xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-                yaxis = np.array(magnetisation_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-                yerr = np.array(magnetisation_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-                ax1.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[i], fmt = markers[j])
-
-                xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-                yaxis = np.array(energy_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-                yerr = np.array(energy_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-                ax2.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[i], fmt =markers[j])
-        
-    ax1.set_xlabel(r"Temperature $T$")
-    ax1.set_ylabel(r"Magnetisation $m$")
-    ax1.set_title(f"RG for $L = ${max(unique_lengths)} and its fractions $b = ${b_list}")
-    ax1.legend()
-
-    ax2.set_xlabel(r"Temperature $T$")
-    ax2.set_ylabel(r"Energy per spin $e$")
-    ax2.set_title(f"RG for $L = ${max(unique_lengths)} and its fractions $b = ${b_list}")
-    ax2.legend()
-
-    fig_mag.savefig(saving_path / f"{direc.name}_biggest_rg_magnetisation.pdf", bbox_inches = "tight")
-    fig_energy.savefig(saving_path / f"{direc.name}_biggest_rg_energy.pdf", bbox_inches = "tight")
-
-
-def do_pairwise_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
-    plt.tight_layout()
-
-    saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
-    saving_path.mkdir(parents = True, exist_ok = True)
-    print("save path : ", saving_path)
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
-    else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
-
-    fig_mag, ax1 = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
-
-    fig_energy, ax2 = plt.subplots(
-        ncols=1,
-        nrows=1
-    )
-
-    b_list = [1,2,4,16]
-    cmap = plt.cm.tab20
-    colors = cmap(np.arange(len(b_list)))
-    markers = ['.-',':.','-.','.-',':.','-.','.-',':.','-.']
-    for i,b in enumerate(b_list):
-        temp_array = np.array([])
-        length_array = np.array([])
-        magnetisation_array = np.array([])
-        magnetisation_error = np.array([])
-        magnetisation_obs_array = np.array([])
-        energy_array = np.array([])
-        energy_error = np.array([])
-        energy_obs_array = np.array([])
-
-        with open(directory / "global_parameters.json", "r") as f:
-            global_config = json.load(f)
-        unique_lengths = global_config["physical_settings"]["L"]
-        unique_temp = global_config["physical_settings"]["temperature"]
-
-        start = 1000
-        for direc in params:
-            temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-            length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-            magnetisation_obs = compute_renormalised_magnetisation(direc, start, b)
-            magnetisation_obs_array = np.append(magnetisation_obs_array, magnetisation_obs)
-            magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
-            magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
-
-            energy_obs = compute_renormalised_energy(direc, start, b)
-            energy_obs_array = np.append(energy_obs_array, energy_obs)
-            energy_array = np.append(energy_array, energy_obs.value)
-            energy_error = np.append(energy_error, energy_obs.dvalue)
-
-
-        # temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
-        length_array, temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error = zip(*sorted(zip(length_array,temp_array, magnetisation_array, magnetisation_error, energy_array, energy_error)))
-
-        if type(unique_lengths) == int:
-            unique_lengths = [unique_lengths]
-        for j, l in enumerate(unique_lengths):
-            if ((b == 1) or (l==256)):
-                xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-                yaxis = np.array(magnetisation_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-                yerr = np.array(magnetisation_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-                ax1.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[j], fmt = markers[i])
-
-                xaxis = np.array(temp_array[j*len(unique_temp): (j+1)*len(unique_temp)])
-                yaxis = np.array(energy_array[j * len(unique_temp):(j+1)*len(unique_temp)])
-                yerr = np.array(energy_error[j * len(unique_temp):(j+1)*len(unique_temp)])
-                ax2.errorbar(xaxis, yaxis, yerr, label = f"b = {b}, L = {l}", color = colors[j], fmt = markers[i])
-        
-    ax1.set_xlabel(r"Temperature $T$")
-    ax1.set_ylabel(r"Magnetisation $m$")
-    ax1.set_title(f"RG for $L = ${max(unique_lengths)} and its fractions $b = ${b_list}")
-    ax1.legend()
-
-    ax2.set_xlabel(r"Temperature $T$")
-    ax2.set_ylabel(r"Energy per spin $e$")
-    ax2.set_title(f"RG for $L = ${max(unique_lengths)} and its fractions $b = ${b_list}")
-    ax2.legend()
-
-    fig_mag.savefig(saving_path / f"{direc.name}_biggest_rg_magnetisation.pdf", bbox_inches = "tight")
-    fig_energy.savefig(saving_path / f"{direc.name}_biggest_rg_energy.pdf", bbox_inches = "tight")
+            # Error = half interval width
+            errors.append(abs(x1 - x0) / 2)
+    return np.array(refined_x), np.array(refined_y), np.array(errors)

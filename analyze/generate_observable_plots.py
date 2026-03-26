@@ -10,11 +10,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from observables_plots import (
     do_observable_plot,
-    do_finite_size_analysis_susceptibility,
     do_order_parameter_plot,
+    get_observables_csv,
+    do_magnetisation_inflection_plot,
+)
+from finite_size_plots import do_finite_size_analysis_susceptibility
+from rg_plots import(
     do_renormalisation_plot,
     do_biggest_L_renormalisation_plot,
-    get_observables_csv,
 )
 
 from generate_critical_exponents import (
@@ -27,13 +30,13 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "20260326_t30_5l16-100_dim3_10-5sweeps"
-    is_deep = True
+    project_name = "rg_test2"
+    is_deep = False
     rg = True
-    start_step = 1000
+    start_step = 200
     # parameter_combination = 2
-    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
-    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     project_path = project_root / project_name
     # config = toml.load(project_path / "config.toml")
     observables = [
@@ -62,7 +65,8 @@ def main():
         r"Correlation length $\xi = \langle n \rangle$"
     ]
 
-    do_order_parameter_plot(project_path, is_deep,0)
+    # do_order_parameter_plot(project_path, is_deep,0)
+    do_magnetisation_inflection_plot(project_path, is_deep, start_step)
     # do_renormalisation_plot(project_path, is_deep, start_step)
     get_observables_csv(project_path, is_deep, start_step, rg)
     # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
