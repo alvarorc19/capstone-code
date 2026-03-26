@@ -1,21 +1,12 @@
 # Code implementation
 ## Implement RG in C++ code
-- Make function that calculates the reduced observables
-1. Calculate neighbour table for the necessary $b$ s
-l1. Execute 512 sweeps
-l2. Compute rg matrix (from XYModel)
-l3. Compute magnetisation (from XYModel)
-l4. Compute energy (from XYModel)
-l5. Write it into h5 (make function for this)
-2. Do last sweep < 512 
 
+- FTODO: Mira de hacer un loop con las diferentes $b$. Guardas los pointers o datasets en un array y los nombres van puestos segun el array de las $b$.
 
-- I did the code but it seems like the thing does not work. The energies it obtains are all over the place. Need to further look into algorithm
-- Instead of doing only blocking, mix finite size and blocking and plot everything together to observe the crossings. Do that for simple case of $16\times16$ and $32\times32$ blocking and actually reducing the lattice size, and plot them all together. See Newman and Barkema RG for magnetisation.
+- FTODO: Quiza hacer Hoshen-Kopelman para encontrar tamaño de los clusters para rg.
 
-- Mira de hacer un loop con las diferentes $b$. Guardas los pointers o datasets en un array y los nombres van puestos segun el array de las $b$.
-
-- Quiza hacer Hoshen-Kopelman para encontrar tamaño de los clusters para rg.
+## Vortices
+- TODO: Add how to compute the vorticity (winding number over plaquettes)
 
 ## Restructuration
 - Make it so that array of $b$ is more interactive and not just copy paste.
@@ -28,6 +19,7 @@ l5. Write it into h5 (make function for this)
 - Add thermalisation check
     - Add some standard deviation check or something.**??**
 - Bear in mind that correlation time goes up as lattice size goes up by Wolff method (see Newman page 101).
+- Read fully finite size difference stuff to see if that method can work.
 
 ## Python
 - Compute correlation function of the lattices I get at the end
@@ -40,6 +32,7 @@ l5. Write it into h5 (make function for this)
     - Really look in depth in Obs class object to see what stuff it does.
 - **Error analysis**
     - See how jacknife and bootstrap are implemented, and compare it to them.
+- Look at test.ipynb in the Documents/test folder to see how to implement the method to find the inflection point and the error to make the extrapolation.
 
 
 ## H5 file structure
