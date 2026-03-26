@@ -56,23 +56,23 @@ def main():
         r"Specific Heat per spin $c_H$"
     ]
 
-    do_order_parameter_plot(project_path, is_deep,0)
+    # do_order_parameter_plot(project_path, is_deep,0)
     do_renormalisation_plot(project_path, is_deep, start_step)
-    do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
+    # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
-    for observable, observables_title in zip(observables, observables_titles):
-        do_observable_plot(
-            observable = observable,
-            observable_title = observables_title,
-            directory = project_path, 
-            is_deep = is_deep,
-            x_data = "temperature",
-            log_plot = False,
-            log_fit = False,
-            linear_fit = False,
-            start = start_step,
-        )
+    # for observable, observables_title in zip(observables, observables_titles):
+    #     do_observable_plot(
+    #         observable = observable,
+    #         observable_title = observables_title,
+    #         directory = project_path, 
+    #         is_deep = is_deep,
+    #         x_data = "temperature",
+    #         log_plot = False,
+    #         log_fit = False,
+    #         linear_fit = False,
+    #         start = start_step,
+    #     )
 
 
     # do_finite_size_analysis_susceptibility(project_path, is_deep, start_step)
