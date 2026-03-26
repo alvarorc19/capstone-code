@@ -331,7 +331,10 @@ def do_observable_plot(
         start:int = 0
     ):
 
-    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    if is_deep:
+        saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
+    else:
+        saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     plt.tight_layout()
 
     if is_deep:
@@ -530,8 +533,11 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
     # Add Obs crap
 
     plt.tight_layout()
+    if is_deep:
+        saving_path = directory.parent.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
+    else:
+        saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
 
-    saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
     saving_path.mkdir(parents = True, exist_ok = True)
     print("save path : ", saving_path)
     if is_deep:
@@ -609,7 +615,10 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 def do_renormalisation_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
     plt.tight_layout()
 
-    saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
+    if is_deep:
+        saving_path = directory.parent.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
+    else:
+        saving_path = directory.parent.parent / "analyze" / "output"/f"renormalisation_{directory.name}"
     saving_path.mkdir(parents = True, exist_ok = True)
     print("save path : ", saving_path)
     if is_deep:
