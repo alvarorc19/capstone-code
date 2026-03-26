@@ -14,7 +14,7 @@ using dvec = std::vector<double>;
 double XYModel::compute_spin_neighbours_term(int index){
     const ivec& neigh_table = lattice_obj->get_neighbours_table();
     const dvec& lattice = lattice_obj->get_lattice();
-    const int stride = 2 * lattice_obj->get_lattice_dim();
+    const int stride = lattice_obj->get_lattice_dim() << 1;
     double neigh_sum = 0;
 
     for (int i = 0; i < stride; i++) {
@@ -99,10 +99,11 @@ void XYModel::cluster_flip_neighbours(int index, double direction, ivec& cluster
     const ivec& neighbours_table = lattice_obj->get_neighbours_table();
     const dvec& lattice = lattice_obj->get_lattice();
     const double index_dot_prod = 2.0 *  J * beta  * std::cos(direction - index_value);
+    const int stride = lattice_dim << 1;
     
     // given neighbours adds them depending on probability
-    for (int i = 0; i < 2 * lattice_dim; i++) {
-        const int neigh_index = neighbours_table[index * 2 * lattice_dim + i];
+    for (int i = 0; i < stride; i++) { // 2d line
+        const int neigh_index = neighbours_table[index * stride + i];
 
         if (visited[neigh_index]) continue;
 
@@ -161,28 +162,70 @@ void XYModel::flip_spin(int index, double angle){
 void XYModel::compute_reduced_lattice(int b, size_t N, size_t L){
     rg_x_spins.clear();
     rg_y_spins.clear();
-    rg_x_spins.reserve(N / (b*b));
-    rg_y_spins.reserve(N / (b*b));
+    const double norm =  1.0 / (b*b);
+    rg_x_spins.reserve(N * norm); //2d
+    rg_y_spins.reserve(N * norm); // 2d
     const dvec & lattice = lattice_obj->get_lattice();
+    int tmp_diag;
+    int tmp1;
+    int tmp2;
     
+    // 2d loop
     for(int i = 0; i < L; i+= b){
         for(int j = 0; j < L; j+= b){
             double x_term = 0;
             double y_term = 0;
             for (int k = 0; k < b; k++){
-                x_term+= std::cos(lattice[(i+k) * L + (j+k)]);
-                y_term+= std::sin(lattice[(i+k) * L + (j+k)]);
+                tmp_diag = (i+k) * L + (j+k);
+                x_term+= std::cos(lattice[tmp_diag]);
+                y_term+= std::sin(lattice[tmp_diag]);
                 int l = 0;
                 while (l < k){
-                    x_term += std::cos(lattice[(i+k) * L + (j+l)]);
-                    x_term += std::cos(lattice[(i+l) * L + (j+k)]);
-                    y_term += std::sin(lattice[(i+k) * L + (j+l)]);
-                    y_term += std::sin(lattice[(i+l) * L + (j+k)]);
+                    tmp1 = (i+k) * L + (j+l);
+                    tmp2 = (i+l) * L + (j+k);
+                    x_term += std::cos(lattice[tmp1]);
+                    x_term += std::cos(lattice[tmp2]);
+                    y_term += std::sin(lattice[tmp1]);
+                    y_term += std::sin(lattice[tmp2]);
                     l++;
                 }
             }
-            rg_x_spins.emplace_back(x_term / (b*b));   
-            rg_y_spins.emplace_back(y_term / (b*b));   
+            rg_x_spins.emplace_back(x_term * norm);   
+            rg_y_spins.emplace_back(y_term * norm);   
+        }
+    }
+
+}
+
+void XYModel::compute_reduced_lattice_3d(int b, size_t N, size_t L){
+    rg_x_spins.clear();
+    rg_y_spins.clear();
+    const double norm =  1.0 / (b * b * b);
+    rg_x_spins.reserve(N * norm); // 3d
+    rg_y_spins.reserve(N * norm); // 3d
+    const dvec & lattice = lattice_obj->get_lattice();
+    
+    // 3d loop
+    for(int i = 0; i < L; i+= b){
+        for(int j = 0; j < L; j+= b){
+            for(int k = 0; k < L; k+=b){
+                double x_term = 0;
+                double y_term = 0;
+                for (int di = 0; di < b; di++) {
+                    int row = (i + di) * L * L;
+                    for(int dj = 0; dj < b; dj++) {
+                        int col = (j + dj) * L;
+                        for (int dk = 0; dk < b; dk++){
+                            double theta = lattice[row + col + k+dk];
+                            x_term += std::cos(theta);
+                            y_term += std::sin(theta);
+                        }
+                    }
+                }
+
+                rg_x_spins.emplace_back(x_term * norm);   
+                rg_y_spins.emplace_back(y_term * norm);   
+            }
         }
     }
 
@@ -214,8 +257,8 @@ double XYModel::compute_rg_spin_magnetic_term(int dim){
 double XYModel::compute_rg_energy(int b, size_t N, ivec & neigh_table, int dim){
     double energy = 0;
     const int rg_N = N / ((std::pow(b,dim)));
-    const int stride = 2 * dim;
-    for(int i = 0; i < rg_N; i++) {
+    const int stride = dim << 1;
+    for(int i = 0; i < rg_N; i++) { 
         for (int j = 0; j < stride; j++){
             energy+= rg_x_spins[i] * rg_x_spins[neigh_table[i * stride + j]];
             energy+= rg_y_spins[i] * rg_y_spins[neigh_table[i * stride + j]];
@@ -254,31 +297,31 @@ ivec XYModel::calculate_reduced_neighbours_table(int L, int dim, int b) {
         }
 
     } else if (dim == 3) {
-        for (int i = 0; i < L / b; i++) {
-            for (int j = 0; j < L / b; j++) {
-                for (int k = 0; k < L / b; k++) {
+        for (int i = 0; i < rg_L; i++) {
+            for (int j = 0; j < rg_L; j++) {
+                for (int k = 0; k < rg_L; k++) {
 
-                    int index = i * L * L + j * L + k;
-
-                    // i
-                    int i_up = (i + 1 == L) ? 0 : i + 1;
-                    int i_down = (i - 1 == -1) ? L - 1 : i - 1;
-                    // j
-                    int j_up = (j + 1 == L) ? 0 : j + 1;
-                    int j_down = (j - 1 == -1) ? L - 1 : j - 1;
-                    // k
-                    int k_up = (k + 1 == L) ? 0 : k + 1;
-                    int k_down = (k - 1 == -1) ? L - 1 : k - 1;
+                    int index = i * rg_L * rg_L + j * rg_L + k;
 
                     // i
-                    neighbours_array[6 * index + 0] = i_up * L * L + j * L + k;
-                    neighbours_array[6 * index + 1] = i_down * L * L + j * L + k;
+                    int i_up = (i + 1 == rg_L) ? 0 : i + 1;
+                    int i_down = (i - 1 == -1) ? rg_L - 1 : i - 1;
                     // j
-                    neighbours_array[6 * index + 2] = i * L * L + j_up * L + k;
-                    neighbours_array[6 * index + 3] = i * L * L + j_down * L + k;
+                    int j_up = (j + 1 == rg_L) ? 0 : j + 1;
+                    int j_down = (j - 1 == -1) ? rg_L - 1 : j - 1;
                     // k
-                    neighbours_array[6 * index + 4] = i * L * L + j * L + k_up;
-                    neighbours_array[6 * index + 5] = i * L * L + j * L + k_down;
+                    int k_up = (k + 1 == rg_L) ? 0 : k + 1;
+                    int k_down = (k - 1 == -1) ? rg_L - 1 : k - 1;
+
+                    // i
+                    neighbours_array[6 * index + 0] = i_up * rg_L * rg_L + j * rg_L + k;
+                    neighbours_array[6 * index + 1] = i_down * rg_L * rg_L + j * rg_L + k;
+                    // j
+                    neighbours_array[6 * index + 2] = i * rg_L * rg_L + j_up * rg_L + k;
+                    neighbours_array[6 * index + 3] = i * rg_L * rg_L + j_down * rg_L + k;
+                    // k
+                    neighbours_array[6 * index + 4] = i * rg_L * rg_L + j * rg_L + k_up;
+                    neighbours_array[6 * index + 5] = i * rg_L * rg_L + j * rg_L + k_down;
                 }
             }
         }

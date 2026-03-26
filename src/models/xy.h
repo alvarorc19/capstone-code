@@ -36,6 +36,7 @@ class XYModel : public Model<double> {
         void change_spin(int index, double spin) override;
         void flip_spin(int index, double angle) override;
         void compute_reduced_lattice(int b, size_t N, size_t L) override;
+        void compute_reduced_lattice_3d(int b, size_t N, size_t L) override;
         double compute_rg_spin_magnetic_term(int dim) override;
         double compute_rg_energy(int b, size_t N, ivec & neigh_table, int dim) override;
         ivec calculate_reduced_neighbours_table(int L, int dim, int b) override;

@@ -46,44 +46,58 @@ print("Base directory: ", base)
 
 
 # Various temperatures
-temp_array = np.linspace(0.3,1.5, 20).tolist()
-# temp_array = []
+# temp_array = np.linspace(0.3,1.5, 20).tolist()
+temp_array = []
 
 # Varius sizes
-length_array = np.linspace(10, 1000, 5, dtype=int).tolist()
-# length_array = []
+# length_array = np.linspace(10, 1000, 5, dtype=int).tolist()
+length_array = []
 
 global_parameters = copy.deepcopy(parameters)
 
 
 if (temp_array and not length_array):
     global_parameters["physical_settings"]["temperature"] = temp_array
-    total_parameters = len(temp_array)
-    num_sub_direc = int(total_parameters / 16)
-    remaining = total_parameters % 16
 
-    for i in range(num_sub_direc):
-        direc = base / f"{project_name}_{i}"
+    if hpc:
+        total_parameters = len(temp_array)
+        num_sub_direc = int(total_parameters / 16)
+        remaining = total_parameters % 16
+
+        for i in range(num_sub_direc):
+            direc = base / f"{project_name}_{i}"
+            direc.mkdir(parents = True, exist_ok = False)
+            for j in range(16):
+                t = temp_array[16* i + j]
+                parameters["physical_settings"]["temperature"] = t
+
+                config_path = direc / f"parameter-config-{j}"
+                config_path.mkdir(exist_ok=True)
+                with open(config_path/ "config.toml","w") as f:
+                    toml.dump(parameters, f)
+
+        direc = base / f"{project_name}_last"
         direc.mkdir(parents = True, exist_ok = False)
-        for j in range(16):
-            t = temp_array[16* i + j].item()
+        for k in range(remaining):
+            t = temp_array[num_sub_direc + k]
             parameters["physical_settings"]["temperature"] = t
 
-            config_path = direc / f"parameter-config-{j}"
+            config_path = direc / f"parameter-config-{k}"
+            config_path.mkdir(exist_ok=True)
+            with open(config_path/ "config.toml","w") as f:
+                toml.dump(parameters, f)
+    else:
+        total_parameters = len(temp_array)
+        direc = base
+        for i in range(total_parameters):
+            t = temp_array[i]
+            parameters["physical_settings"]["temperature"] = t
+
+            config_path = direc / f"parameter-config-{i}"
             config_path.mkdir(exist_ok=True)
             with open(config_path/ "config.toml","w") as f:
                 toml.dump(parameters, f)
 
-    direc = base / f"{project_name}_last"
-    direc.mkdir(parents = True, exist_ok = False)
-    for k in range(remaining):
-        t = temp_array[num_sub_direc + k].item()
-        parameters["physical_settings"]["temperature"] = t
-
-        config_path = direc / f"parameter-config-{k}"
-        config_path.mkdir(exist_ok=True)
-        with open(config_path/ "config.toml","w") as f:
-            toml.dump(parameters, f)
 
 elif (not temp_array and length_array):
     global_parameters["physical_settings"]["L"] =length_array
@@ -92,28 +106,39 @@ elif (not temp_array and length_array):
     remaining = total_parameters % 16
 
 
-    for i in range(num_sub_direc):
-        direc = base / f"{project_name}_{i}"
+    if hpc:
+        for i in range(num_sub_direc):
+            direc = base / f"{project_name}_{i}"
+            direc.mkdir(parents = True, exist_ok = False)
+            for j in range(16):
+                l = length_array[16* i + j]
+                parameters["physical_settings"]["L"] = l
+
+                config_path = direc / f"parameter-config-{j}"
+                config_path.mkdir(exist_ok=True)
+                with open(config_path/ "config.toml","w") as f:
+                    toml.dump(parameters, f)
+
+        direc = base / f"{project_name}_last"
         direc.mkdir(parents = True, exist_ok = False)
-        for j in range(16):
-            l = length_array[16* i + j].item()
+        for k in range(remaining):
             parameters["physical_settings"]["L"] = l
 
-            config_path = direc / f"parameter-config-{j}"
+            config_path = direc / f"parameter-config-{k}"
             config_path.mkdir(exist_ok=True)
             with open(config_path/ "config.toml","w") as f:
                 toml.dump(parameters, f)
+    else:
+        total_parameters = len(temp_array)
+        direc = base
+        for i in range(total_parameters):
+            l = length_array[i]
+            parameters["physical_settings"]["L"] = l
 
-    direc = base / f"{project_name}_last"
-    direc.mkdir(parents = True, exist_ok = False)
-    for k in range(remaining):
-        l = length_array[num_sub_direc + k].item()
-        parameters["physical_settings"]["L"] = l
-
-        config_path = direc / f"parameter-config-{k}"
-        config_path.mkdir(exist_ok=True)
-        with open(config_path/ "config.toml","w") as f:
-            toml.dump(parameters, f)
+            config_path = direc / f"parameter-config-{i}"
+            config_path.mkdir(exist_ok=True)
+            with open(config_path/ "config.toml","w") as f:
+                toml.dump(parameters, f)
 
 
 elif (temp_array and length_array):
@@ -125,30 +150,45 @@ elif (temp_array and length_array):
     global_parameters["physical_settings"]["L"] =length_array
     global_parameters["physical_settings"]["temperature"] = temp_array
 
-    for i in range(num_sub_direc):
-        direc = base / f"{project_name}_{i}"
-        direc.mkdir(parents = True, exist_ok = False)
-        for j in range(16):
-            t, l = combinations[16 * i + j]
-            parameters["physical_settings"]["L"] = l.item()
-            parameters["physical_settings"]["temperature"] = t.item()
+    if hpc:
+        for i in range(num_sub_direc):
+            direc = base / f"{project_name}_{i}"
+            direc.mkdir(parents = True, exist_ok = False)
+            for j in range(16):
+                t, l = combinations[16 * i + j]
+                parameters["physical_settings"]["L"] = l
+                parameters["physical_settings"]["temperature"] = t
 
-            config_path = direc / f"parameter-config-{j}"
+                config_path = direc / f"parameter-config-{j}"
+                config_path.mkdir(exist_ok=True)
+                with open(config_path/ "config.toml","w") as f:
+                    toml.dump(parameters, f)
+
+        direc = base / f"{project_name}_last"
+        direc.mkdir(parents = True, exist_ok = False)
+        for k in range(remaining):
+            t, l = combinations[num_sub_direc + k]
+            parameters["physical_settings"]["L"] = l
+            parameters["physical_settings"]["temperature"] = t
+
+            config_path = direc / f"parameter-config-{k}"
             config_path.mkdir(exist_ok=True)
             with open(config_path/ "config.toml","w") as f:
                 toml.dump(parameters, f)
 
-    direc = base / f"{project_name}_last"
-    direc.mkdir(parents = True, exist_ok = False)
-    for k in range(remaining):
-        t, l = combinations[num_sub_direc + k]
-        parameters["physical_settings"]["L"] = l.item()
-        parameters["physical_settings"]["temperature"] = t.item()
+    else:
+        total_parameters = len(temp_array)
+        direc = base
+        for i in range(total_parameters):
+            t, l = combinations[i]
+            parameters["physical_settings"]["L"] = l
+            parameters["physical_settings"]["temperature"] = t
 
-        config_path = direc / f"parameter-config-{k}"
-        config_path.mkdir(exist_ok=True)
-        with open(config_path/ "config.toml","w") as f:
-            toml.dump(parameters, f)
+            config_path = direc / f"parameter-config-{i}"
+            config_path.mkdir(exist_ok=True)
+            with open(config_path/ "config.toml","w") as f:
+                toml.dump(parameters, f)
+
 
 else:
     config_path = base / f"parameter-config-0"

@@ -99,10 +99,16 @@ class Simulation {
 
         /**
          * @brief It exeucutes the simulation using renormalisation group methods
-         * to store the data for further analysis
+         * in 2D to store the data for further analysis
          * 
          */
-        void rg_run();
+        void rg_run_2d();
+        /**
+         * @brief It exeucutes the simulation using renormalisation group methods
+         * in 3D to store the data for further analysis
+         * 
+         */
+        void rg_run_3d();
 
         /**
          * @brief executes a single Metropolis step
@@ -192,6 +198,7 @@ class Simulation {
          * 
          */
         void update_rg_observables(int position, int b1, int b2,int b3, ivec & neigh_table1, ivec & neigh_table2, ivec & neigh_table3);
+        void update_rg_observables_3d(int position, int b1, int b2, ivec & neigh_table1, ivec & neigh_table2);
 
         double compute_average_cluster_size(ivec & cluster_size);
 };
