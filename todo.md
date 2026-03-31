@@ -12,9 +12,6 @@
 - Make it so that array of $b$ is more interactive and not just copy paste.
 
 
-## Hybrid method
-- Incorpora método híbrido, a la que haya una cantidad de clusters estándar, cambia al método de Metropolis y solo cambia de vuelta si todos los spins son cambiados $\implies$ faster update.
-
 # Observables implementation
 - Add thermalisation check
     - Add some standard deviation check or something.**??**

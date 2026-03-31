@@ -83,6 +83,11 @@ class Simulation {
          * 
          */
         void initialise_writing();
+
+        /* @brief Cleans writing objects
+         *
+         */
+        void close_writing();
         
         /**
          * @brief It executes the simulation, a full run corresponding to the time steps. Chooses 

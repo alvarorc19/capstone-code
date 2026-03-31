@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
             }
             std::unique_ptr<Simulation> sim = std::make_unique<Simulation>();
             // Initialise in critical since multithreading messes up parsing and writing
-            #pragma omp critical
+            #pragma omp critical(HDF5)
             {
                 sim->parse_parameters(directories[i], running_model);
                 sim->initialise_writing();

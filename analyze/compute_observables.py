@@ -128,11 +128,32 @@ def compute_cluster_size(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     obs.gamma_method()
     return obs
 
+def compute_cluster_size_per_spin(directory:pathlib.Path, start:int = 0) -> pe.Obs:
+    n_array = import_observable(directory, "average_cluster_size")
+    obs = pe.Obs([n_array[start:]], ["ens"])
+    length = import_physical_parameter(directory, "L")
+    dim = import_physical_parameter(directory, "dimension")
+    N = length ** dim
+    obs = obs / N
+    obs.gamma_method()
+    return obs
+
 def compute_cluster_susceptibility(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     n_array = import_observable(directory, "average_cluster_size")
     obs = pe.Obs([n_array[start:]], ["ens"])
     temp = import_physical_parameter(directory, "temperature")
     x_obs = 1 / temp * obs
+    x_obs.gamma_method()
+    return x_obs
+
+def compute_cluster_susceptibility_per_spin(directory:pathlib.Path, start:int = 0) -> pe.Obs:
+    n_array = import_observable(directory, "average_cluster_size")
+    obs = pe.Obs([n_array[start:]], ["ens"])
+    temp = import_physical_parameter(directory, "temperature")
+    length = import_physical_parameter(directory, "L")
+    dim = import_physical_parameter(directory, "dimension")
+    N = length ** dim
+    x_obs = ((1 / temp) * obs) / N
     x_obs.gamma_method()
     return x_obs
 

@@ -191,6 +191,7 @@ void Simulation::normal_run() {
     {
         write_observables_final(num_loops << 9, final_energy, final_x_magnetisation,final_y_magnetisation, final_average_cluster_size);
         file->flush();
+        close_writing();
     }
 
     #pragma omp critical(io)
@@ -376,6 +377,7 @@ void Simulation::rg_run_2d() {
         write_observables_final(num_loops << 9, final_energy, final_x_magnetisation,final_y_magnetisation, final_average_cluster_size);
         write_rg_observables_final(num_loops << 9, final_rg_energy1, final_rg_energy2,final_rg_energy3, final_rg_x_magnetisation1, final_rg_x_magnetisation2,final_rg_x_magnetisation3, final_rg_y_magnetisation1, final_rg_y_magnetisation2, final_rg_y_magnetisation3);
         file->flush();
+        close_writing();
     }
 
     #pragma omp critical(io)
@@ -593,6 +595,26 @@ void Simulation::initialise_writing() {
     }
 
 }
+void Simulation::close_writing() {
+    parameters.lattice_set.reset();
+
+    parameters.magnetisation_set.reset();
+    parameters.energy_set.reset();
+    parameters.cluster_size_set.reset();
+
+    parameters.rg_magnetisation_set1.reset();
+    parameters.rg_magnetisation_set2.reset();
+    parameters.rg_magnetisation_set3.reset();
+
+    parameters.rg_energy_set1.reset();
+    parameters.rg_energy_set2.reset();
+    parameters.rg_energy_set3.reset();
+
+    if (file) {
+        file->flush();
+        file.reset();
+    }
+}
 
 void Simulation::rg_run_3d() {
 
@@ -714,11 +736,12 @@ void Simulation::rg_run_3d() {
         time_step++;
     }
 
-    #pragma omp critical (HDF5)
+    #pragma omp critical(HDF5)
     {
         write_observables_final(num_loops << 9, final_energy, final_x_magnetisation,final_y_magnetisation, final_average_cluster_size);
         write_rg_observables_final(num_loops << 9, final_rg_energy1, final_rg_energy2,final_rg_energy3, final_rg_x_magnetisation1, final_rg_x_magnetisation2,final_rg_x_magnetisation3, final_rg_y_magnetisation1, final_rg_y_magnetisation2, final_rg_y_magnetisation3);
         file->flush();
+        close_writing();
     }
 
     #pragma omp critical(io)

@@ -13,6 +13,7 @@ from observables_plots import (
     do_order_parameter_plot,
     get_observables_csv,
     do_magnetisation_inflection_plot,
+    do_inflection_vs_length_plot,
 )
 from finite_size_plots import do_finite_size_analysis_susceptibility
 from rg_plots import(
@@ -30,9 +31,9 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
-    project_name = "rg_test2"
+    project_name = "inflection_test"
     is_deep = False
-    rg = True
+    rg = False
     start_step = 200
     # parameter_combination = 2
     project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
@@ -50,6 +51,8 @@ def main():
         "specific_heat_per_spin",
         "cluster_susceptibility",
         "correlation_length",
+        "correlation_length_per_spin",
+        "cluster_susceptibility_per_spin",
     ]
 
     observables_titles = [
@@ -62,13 +65,16 @@ def main():
         r"Magnetic Susceptibility per spin $\chi / N$",
         r"Specific Heat per spin $c_H$",
         r"Susceptibility $\chi$",
-        r"Correlation length $\xi = \langle n \rangle$"
+        r"Correlation length $\xi = \langle n \rangle$",
+        r"Correlation length per spin$\xi /N$",
+        r"Susceptibility per spin $\chi / N$",
     ]
 
     # do_order_parameter_plot(project_path, is_deep,0)
     do_magnetisation_inflection_plot(project_path, is_deep, start_step)
     # do_renormalisation_plot(project_path, is_deep, start_step)
     get_observables_csv(project_path, is_deep, start_step, rg)
+    do_inflection_vs_length_plot(project_path, is_deep, start_step)
     # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots
