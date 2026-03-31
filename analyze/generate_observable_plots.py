@@ -31,6 +31,8 @@ plt.rcParams.update({'font.size':14, 'figure.autolayout':True})
 def main():
     # project_name = "temperature50_0-3_1-5_l128_dim2_10-3sweeps"
     project_name = "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps"
+    project_name = "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps"
+    project_name = "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps"
     is_deep = True
     rg = False
     start_step = 200
@@ -65,10 +67,10 @@ def main():
         r"Correlation length $\xi = \langle n \rangle$"
     ]
 
-    do_order_parameter_plot(project_path, is_deep,0)
+    # do_order_parameter_plot(project_path, is_deep,0)
     # do_magnetisation_inflection_plot(project_path, is_deep, start_step)
     # do_renormalisation_plot(project_path, is_deep, start_step)
-    # get_observables_csv(project_path, is_deep, start_step, rg)
+    get_observables_csv(project_path, is_deep, start_step, rg)
     # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 
     # Create plots

@@ -94,10 +94,16 @@ def get_observables_csv(
         observable_tauint = np.array([])
         compute_observable = _find_observable_function(observable)
         for direc in params:
-            observable_obs = compute_observable(direc, start)
-            observable_array = np.append(observable_array, observable_obs.value)
-            observable_error = np.append(observable_error, observable_obs.dvalue)
-            observable_tauint = np.append(observable_tauint, observable_obs.e_tauint["ens"])
+            try:
+                observable_obs = compute_observable(direc, start)
+                observable_array = np.append(observable_array, observable_obs.value)
+                observable_error = np.append(observable_error, observable_obs.dvalue)
+                observable_tauint = np.append(observable_tauint, observable_obs.e_tauint["ens"])
+
+            except Exception:
+                observable_array = np.append(observable_array, 0)
+                observable_error = np.append(observable_error, 0)
+                observable_tauint = np.append(observable_tauint, 0)
 
         df[observable + "_value"] = observable_array
         df[observable + "_error"] = observable_error
