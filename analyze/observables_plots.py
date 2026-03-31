@@ -155,10 +155,7 @@ def do_observable_plot(
         start:int = 0
     ):
 
-    if is_deep:
-        saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
-    else:
-        saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     plt.tight_layout()
 
     if is_deep:
@@ -187,7 +184,8 @@ def do_observable_plot(
 
 
     for direc in params:
-        print("direc", direc)
+        if import_physical_parameter(direc, "temperature") == 1.2:
+            continue
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
         observable_obs = compute_observable(direc, start)
@@ -198,7 +196,8 @@ def do_observable_plot(
 
     fig, ax = plt.subplots(
         ncols=1,
-        nrows=1
+        nrows=1,
+        figsize = (9,6)
     )
 
     cmap = plt.cm.tab20
@@ -283,7 +282,8 @@ def do_observable_plot(
 
 
     saving_path.mkdir(parents = True, exist_ok = True)
-    fig.savefig(saving_path / f"{directory.name}_{observable}.pdf")
+    print("saving path ", saving_path)
+    fig.savefig(saving_path / f"{directory.name}_{observable}.pdf",bbox_inches = "tight")
     plt.close(fig)
 
 
@@ -304,6 +304,9 @@ def _add_scatter_data(
 
     # Sorting
     idx = np.argsort(xaxis)
+    xaxis = np.array(xaxis)
+    yaxis = np.array(yaxis)
+    yerr = np.array(yerr)
     xaxis = xaxis[idx]
     yaxis = yaxis[idx]
     yerr = yerr[idx]
@@ -351,8 +354,17 @@ def _add_format_plot(
     axs.yaxis.set_major_formatter(latex_formatter)
     # axs.yaxis.set_minor_formatter(latex_formatter)
     # axs.xaxis.set_minor_formatter(latex_formatter)
+    handles, labels = axs.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    # axs.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.1,1.05), fancybox = True, shadow = True)
+    box = axs.get_position()
+    axs.set_position([box.x0, box.y0 + box.height * 0.1,
+                     box.width, box.height * 0.9])
 
-    axs.legend()
+# Put a legend below current axis
+    axs.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1),
+              fancybox=True, shadow=True, ncol=5)
+
     axs.grid()
     axs.minorticks_on()
     axs.tick_params(axis='both', which='major', direction='in', length=7, top=True, right = True)
@@ -364,21 +376,20 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
     # Add Obs crap
 
     plt.tight_layout()
-    if is_deep:
-        saving_path = directory.parent.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
-    else:
-        saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
+    saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
 
     saving_path.mkdir(parents = True, exist_ok = True)
     print("save path : ", saving_path)
     if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
+        directory = directory / f"{directory.name}_0"
+        params = [x for x in directory.iterdir() if x.is_dir()]
+        # sub_dir = [x for x in directory.iterdir() if x.is_dir()]
+        # params = []
+        # for dir in sub_dir:
+        #     if dir.is_dir():
+        #         for direc in dir.iterdir():
+        #             if direc.is_dir():
+        #                 params.append(direc)
     else:
         params = [x for x in directory.iterdir() if x.is_dir()]
 
@@ -398,7 +409,8 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 
         fig_mag, ax1 = plt.subplots(
             ncols=1,
-            nrows=1
+            nrows=1,
+            figsize = (9,6)
         )
 
         ax1.plot(magnetisation_array, color = "orangered", alpha = 0.5)
@@ -410,8 +422,11 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 
         fig_energy, ax2 = plt.subplots(
             ncols=1,
-            nrows=1
+            nrows=1,
+            figsize = (9,6)
         )
+        fig_energy.set_facecolor("#ECEFF4")
+        ax2.set_facecolor("#ECEFF4")
 
         ax2.plot(energy[start:], color = "chartreuse", alpha = 0.5)
         ax2.set_ylabel(r"Energy $E$")
@@ -422,7 +437,8 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 
         fig_cluster_size, ax3 = plt.subplots(
             ncols=1,
-            nrows=1
+            nrows=1,
+            figsize = (9,6)
         )
 
         ax3.plot(cluster_size[start:], color = "navy", alpha = 0.5)
@@ -434,7 +450,8 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
 
         fig_susc, ax3 = plt.subplots(
             ncols=1,
-            nrows=1
+            nrows=1,
+            figsize = (9,6)
         )
 
         ax3.plot(susceptibility[start:], color = "red", alpha = 0.5)
@@ -450,10 +467,7 @@ def do_magnetisation_inflection_plot(
         start:int = 0
     ):
 
-    if is_deep:
-        saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
-    else:
-        saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     plt.tight_layout()
 
     if is_deep:
@@ -480,6 +494,8 @@ def do_magnetisation_inflection_plot(
 
     for direc in params:
         print("direc", direc)
+        if import_physical_parameter(direc, "temperature") == 1.2:
+            continue
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
         length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
         magnetisation_obs = compute_average_magnetisation(direc, start)
@@ -489,7 +505,8 @@ def do_magnetisation_inflection_plot(
 
     fig, ax = plt.subplots(
         ncols=1,
-        nrows=1
+        nrows=1,
+        figsize = (9,6)
     )
 
     cmap = plt.cm.tab20
@@ -497,15 +514,16 @@ def do_magnetisation_inflection_plot(
         length_array,temp_array, magnetisation_array, magnetisation_error = zip(*sorted(zip(length_array, temp_array, magnetisation_array, magnetisation_error)))
         colors = cmap(np.arange(len(unique_lengths)*2))
         for i,l in enumerate(unique_lengths):
-            xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)]
-            yaxis = magnetisation_array[i * len(unique_temp):(i+1)*len(unique_temp)]
-            yerr = magnetisation_error[i * len(unique_temp):(i+1)*len(unique_temp)]
+            xaxis = np.array(temp_array[i*len(unique_temp): (i+1)*len(unique_temp)])
+            yaxis = np.array(magnetisation_array[i * len(unique_temp):(i+1)*len(unique_temp)])
+            yerr = np.array(magnetisation_error[i * len(unique_temp):(i+1)*len(unique_temp)])
             # Sorting
             idx = np.argsort(xaxis)
             xaxis = xaxis[idx]
             yaxis = yaxis[idx]
             yerr = yerr[idx]
             x_infl, y_infl, infl_err = _find_inflection_points(xaxis, yaxis)
+            ax.errorbar(x_infl, y_infl, infl_err, label="Inflection points", color = "r", fmt = ".")
             ax = _add_scatter_data(
                 axs = ax,
                 xaxis = xaxis,
@@ -516,21 +534,20 @@ def do_magnetisation_inflection_plot(
                 secondary_color = colors[i+1],
                 marker = ".-",
             )
-            ax.errorbar(x_infl, y_infl, infl_err, label="Inflection points", color = "r")
 
         ax = _add_format_plot(
             axs = ax,
             xlabel="Temperature, $T$",
-            ylabel=r"Magnetisation $\langle \mathbf{m} \rangle$",
+            ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
             title = f"Magnetisation vs Temperature, inflection points",
         )
     elif isinstance(unique_lengths, int):
         l = unique_lengths
         i = 0
         colors = cmap([0,1])
-        xaxis = temp_array
-        yaxis = magnetisation_array
-        yerr = magnetisation_error
+        xaxis = np.array(temp_array)
+        yaxis = np.array(magnetisation_array)
+        yerr = np.array(magnetisation_error)
         # Sorting
         idx = np.argsort(xaxis)
         xaxis = xaxis[idx]
@@ -560,7 +577,8 @@ def do_magnetisation_inflection_plot(
         )
 
     saving_path.mkdir(parents = True, exist_ok = True)
-    fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf")
+    print("saving path ", saving_path)
+    fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf",bbox_inches = "tight")
 
 def _find_inflection_points(x:np.ndarray, y:np.ndarray):
     assert len(y) == len(x), "magnetisation and temp should be same length" 
