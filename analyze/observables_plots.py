@@ -80,7 +80,7 @@ def get_observables_csv(
         params = [x for x in directory.iterdir() if x.is_dir()]
 
     temp_array = np.array([])
-    length_array = np.array([])
+    length_array = np.array([], dtype = int)
 
     for direc in params:
         temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
@@ -136,10 +136,10 @@ def get_observables_csv(
                 energy_array = np.append(energy_array, energy_obs.value)
                 energy_error = np.append(energy_error, energy_obs.dvalue)
                 energy_tauint = np.append(energy_tauint, energy_obs.e_tauint["ens"])
-            df[f"magnetisation_b_{b}"] = magnetisation_array
+            df[f"magnetisation_b_{b}_value"] = magnetisation_array
             df[f"magnetisation_b_{b}_error"] = magnetisation_error
             df[f"magnetisation_b_{b}_tauint"] = magnetisation_tauint
-            df[f"energy_b_{b}"] = energy_array
+            df[f"energy_b_{b}_value"] = energy_array
             df[f"energy_b_{b}_error"] = energy_error
             df[f"energy_b_{b}_tauint"] = energy_tauint
         
@@ -502,7 +502,10 @@ def do_inflection_vs_length_plot(
         df = pd.read_csv(csv_file)
 
     df = df[df["energy_value"] != 0.0].reset_index(drop=True)
-    dim = import_physical_parameter(directory / f"{directory.name}_0" / "parameter-config-0", "dimension")
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_0" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
 
     fig, ax = plt.subplots(
         ncols=1,
