@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import itertools
 from matplotlib.animation import FuncAnimation
+from scipy.optimize import curve_fit
 from tqdm import tqdm
 from matplotlib.widgets import Slider
 
@@ -25,7 +26,6 @@ from compute_observables import (
     compute_susceptibility,
     compute_susceptibility_per_spin,
     compute_specific_heat,
-    compute_binder_cumulant,
     compute_normalised_energy,
     compute_specific_heat_per_spin,
     compute_renormalised_energy,
@@ -47,7 +47,6 @@ def _find_observable_function(observable:str):
         "energy":compute_average_energy,
         "susceptibility":compute_susceptibility,
         "specific_heat":compute_specific_heat,
-        "binder_cumulant":compute_binder_cumulant,
         "energy_per_spin":compute_normalised_energy,
         "susceptibility_per_spin":compute_susceptibility_per_spin,
         "specific_heat_per_spin":compute_specific_heat_per_spin,
@@ -67,7 +66,7 @@ def get_observables_csv(
 
     saving_path = directory
     df = pd.DataFrame()
-    observables = ["magnetisation", "energy", "susceptibility", "specific_heat", "energy_per_spin", "susceptibility_per_spin", "specific_heat_per_spin", "cluster_susceptibility"]
+    observables = ["magnetisation", "energy", "susceptibility", "specific_heat", "energy_per_spin", "susceptibility_per_spin", "specific_heat_per_spin", "cluster_susceptibility","cluster_susceptibility_per_spin", "correlation_length", "correlation_length_per_spin"]
 
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]
@@ -149,8 +148,6 @@ def get_observables_csv(
     df.to_csv(saving_path / "ensemble_observables.csv", index = False)
     print("Finished writing to ", saving_path / "ensemble_observables.csv")
 
-
-
 def do_observable_plot(
         observable:str,
         observable_title:str,
@@ -164,41 +161,13 @@ def do_observable_plot(
     ):
 
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
-    plt.tight_layout()
-
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
+    # plt.tight_layout()
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
     else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
-
-    temp_array = np.array([])
-    length_array = np.array([])
-    observable_array = np.array([])
-    observable_error = np.array([])
-    observable_obs_array = np.array([])
-
-    compute_observable = _find_observable_function(observable)
-
-    with open(directory / "global_parameters.json", "r") as f:
-        global_config = json.load(f)
-    unique_lengths = global_config["physical_settings"]["L"]
-    unique_temp = global_config["physical_settings"]["temperature"]
-
-
-    for direc in params:
-        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        observable_obs = compute_observable(direc, start)
-        observable_obs_array = np.append(observable_obs_array, observable_obs)
-        observable_array = np.append(observable_array, observable_obs.value)
-        observable_error = np.append(observable_error, observable_obs.dvalue)
-
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
 
     fig, ax = plt.subplots(
         ncols=1,
@@ -207,67 +176,48 @@ def do_observable_plot(
     )
 
     cmap = plt.cm.tab20
+    colors = cmap(np.arange(10))
     if x_data == "temperature":
-
-        if isinstance(unique_lengths, list):
-            length_array,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
-            colors = cmap(np.arange(len(unique_lengths)*2))
-            for i,l in enumerate(unique_lengths):
-                ax = _add_scatter_data(
-                    axs = ax,
-                    xaxis = temp_array[i*len(unique_temp): (i+1)*len(unique_temp)],
-                    yaxis = observable_array[i * len(unique_temp):(i+1)*len(unique_temp)],
-                    yerr = observable_error[i * len(unique_temp):(i+1)*len(unique_temp)],
-                    data_label = f"$L = {l}$",
-                    linear_fit = linear_fit,
-                    log_fit = log_fit,
-                    main_color = colors[i],
-                    secondary_color = colors[i+1],
-                )
-
-            ax = _add_format_plot(
-                axs = ax,
-                xlabel="Temperature, $T$",
-                ylabel=observable_title,
-                title = f"{observable.capitalize()} vs Temperature",
-                logscale = log_plot,
-                linear_fit = linear_fit,
-            )
-        elif isinstance(unique_lengths, int):
-            l = unique_lengths
-            i = 0
-            colors = cmap([0,1])
+        i = 0
+        for l, group in df.groupby("L"):
+            group = group.sort_values("temperature")
+            xaxis = group["temperature"].to_numpy()
+            yaxis = group[f"{observable}_value"].to_numpy()
+            yerr = group[f"{observable}_error"].to_numpy()
             ax = _add_scatter_data(
                 axs = ax,
-                xaxis = temp_array,
-                yaxis = observable_array,
-                yerr = observable_error,
+                xaxis = xaxis,
+                yaxis = yaxis,
+                yerr = yerr,
                 data_label = f"$L = {l}$",
-                linear_fit = linear_fit,
-                log_fit = log_fit,
                 main_color = colors[i],
                 secondary_color = colors[i+1],
+                marker = ".-",
             )
 
+            title = observable.replace("_", " ")
             ax = _add_format_plot(
                 axs = ax,
                 xlabel="Temperature, $T$",
                 ylabel=observable_title,
-                title = f"{observable.capitalize()} vs Temperature",
+                title = f"{title.capitalize()} vs Temperature",
                 logscale = log_plot,
                 linear_fit = linear_fit,
             )
+            i+=1
 
     elif x_data == "length":
-        length_array,temp_array, observable_array, observable_error = zip(*sorted(zip(length_array, temp_array, observable_array, observable_error)))
-        colors = cmap(np.arange(len(unique_temp)*2))
-
-        for i,t in enumerate(unique_temp):
+        j = 0
+        for t, group in df.groupby("temperature"):
+            group = group.sort_values("L")
+            xaxis = group["L"].to_numpy()
+            yaxis = group[f"{observable}_value"].to_numpy()
+            yerr = group[f"{observable}_error"].to_numpy()
             ax = _add_scatter_data(
                 axs = ax,
-                xaxis = length_array[len(unique_lengths) * i : (i+1) * len(unique_lengths)],
-                yaxis = observable_array[i * len(unique_lengths):(i+1)*len(unique_lengths)],
-                yerr = observable_error[i * len(unique_lengths):(i+1)*len(unique_lengths)],
+                xaxis = xaxis,
+                yaxis = yaxis,
+                yerr = yerr,
                 data_label = f"$T = {t}$",
                 linear_fit = linear_fit,
                 log_fit = log_fit,
@@ -275,14 +225,16 @@ def do_observable_plot(
                 secondary_color = colors[i+1],
             )
 
-        ax = _add_format_plot(
-            axs = ax,
-            xlabel="Length, $L$",
-            ylabel=observable_title,
-            title = f"{observable.capitalize()} vs Length",
-            logscale = log_plot,
-            linear_fit = linear_fit,
-        )
+            title = observable.replace("_", " ")
+            ax = _add_format_plot(
+                axs = ax,
+                xlabel="Length, $L$",
+                ylabel=observable_title,
+                title = f"{title.capitalize()} vs Length",
+                logscale = log_plot,
+                linear_fit = linear_fit,
+            )
+            j+=1
     else:
         print("This is not incorporated, say temperature or length")
 
@@ -478,37 +430,13 @@ def do_magnetisation_inflection_plot(
     ):
 
     saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
-    plt.tight_layout()
-
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
     else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
-
-    temp_array = np.array([])
-    length_array = np.array([])
-    magnetisation_array = np.array([])
-    magnetisation_error = np.array([])
-
-    with open(directory / "global_parameters.json", "r") as f:
-        global_config = json.load(f)
-    unique_lengths = global_config["physical_settings"]["L"]
-    unique_temp = global_config["physical_settings"]["temperature"]
-
-
-    for direc in params:
-        # print("direc", direc)
-        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        magnetisation_obs = compute_average_magnetisation(direc, start)
-        magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
-        magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+    # plt.tight_layout()
 
 
     fig, ax = plt.subplots(
@@ -518,30 +446,33 @@ def do_magnetisation_inflection_plot(
     )
 
     cmap = plt.cm.tab20
-    if isinstance(unique_lengths, list):
-        length_array,temp_array, magnetisation_array, magnetisation_error = zip(*sorted(zip(length_array, temp_array, magnetisation_array, magnetisation_error)))
-        colors = cmap(np.arange(len(unique_lengths)*2))
-        for i,l in enumerate(unique_lengths):
-            xaxis = np.array(temp_array[i*len(unique_temp): (i+1)*len(unique_temp)])
-            yaxis = np.array(magnetisation_array[i * len(unique_temp):(i+1)*len(unique_temp)])
-            yerr = np.array(magnetisation_error[i * len(unique_temp):(i+1)*len(unique_temp)])
-            # Sorting
-            idx = np.argsort(xaxis)
-            xaxis = xaxis[idx]
-            yaxis = yaxis[idx]
-            yerr = yerr[idx]
-            x_infl, y_infl, infl_err = _find_inflection_points(xaxis, yaxis)
-            ax.errorbar(x_infl, y_infl, infl_err, label="Inflection points", color = "r", fmt = ".")
-            ax = _add_scatter_data(
-                axs = ax,
-                xaxis = xaxis,
-                yaxis = yaxis,
-                yerr = yerr,
-                data_label = f"$L = {l}$",
-                main_color = colors[i],
-                secondary_color = colors[i+1],
-                marker = ".-",
-            )
+    colors = cmap(np.arange(20))
+    i = 0
+    for l, group in df.groupby("L"):
+        group = group.sort_values("temperature")
+        xaxis = group["temperature"].to_numpy()
+        yaxis = group[f"magnetisation_value"].to_numpy()
+        yerr = group[f"magnetisation_error"].to_numpy()
+
+        idx = np.argsort(xaxis)
+        xaxis = xaxis[idx]
+        yaxis = yaxis[idx]
+        yerr = yerr[idx]
+
+        params, pcov = _fit_mag_to_tanh(xaxis, yaxis, yerr)
+        temperature_fit = np.linspace(np.min(xaxis), np.max(xaxis), 300)
+        ax.plot(temperature_fit, _tanh(temperature_fit, *params),"--", color = colors[i])
+
+        ax = _add_scatter_data(
+            axs = ax,
+            xaxis = xaxis,
+            yaxis = yaxis,
+            yerr = yerr,
+            data_label = f"$L = {int(l)}$",
+            main_color = colors[i],
+            secondary_color = colors[i+1],
+            marker = "."
+        )
 
         ax = _add_format_plot(
             axs = ax,
@@ -549,40 +480,7 @@ def do_magnetisation_inflection_plot(
             ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
             title = f"Magnetisation vs Temperature, inflection points",
         )
-    elif isinstance(unique_lengths, int):
-        l = unique_lengths
-        i = 0
-        colors = cmap([0,1])
-        xaxis = np.array(temp_array)
-        yaxis = np.array(magnetisation_array)
-        yerr = np.array(magnetisation_error)
-        # Sorting
-        idx = np.argsort(xaxis)
-        xaxis = xaxis[idx]
-        yaxis = yaxis[idx]
-        yerr = yerr[idx]
-        x_infl, y_infl, x_infl_err = _find_inflection_points(xaxis, yaxis)
-        print("x_infl ",x_infl) 
-        print("y_infl ",y_infl) 
-        print("ingl_Er ",x_infl_err) 
-        ax = _add_scatter_data(
-            axs = ax,
-            xaxis = temp_array,
-            yaxis = magnetisation_array,
-            yerr = magnetisation_error,
-            data_label = f"$L = {l}$",
-            main_color = colors[i],
-            secondary_color = colors[i+1],
-            marker = ".-",
-        )
-        ax.errorbar(x_infl, y_infl, xerr = x_infl_err, label=f"Inflection $T_c = {x_infl[5]:.4f}\pm{x_infl_err[5]:.4f}$", color = "r", fmt=".")
-
-        ax = _add_format_plot(
-            axs = ax,
-            xlabel="Temperature, $T$",
-            ylabel=r"Magnetisation $\langle \mathbf{m} \rangle$",
-            title = f"Magnetisation vs Temperature, inflection points",
-        )
+        i+=1
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf")
@@ -598,114 +496,102 @@ def do_inflection_vs_length_plot(
         saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
     else:
         saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
-    plt.tight_layout()
 
-    if is_deep:
-        sub_dir = [x for x in directory.iterdir() if x.is_dir()]
-        params = []
-        for dir in sub_dir:
-            if dir.is_dir():
-                for direc in dir.iterdir():
-                    if direc.is_dir():
-                        params.append(direc)
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
     else:
-        params = [x for x in directory.iterdir() if x.is_dir()]
-
-    temp_array = np.array([])
-    length_array = np.array([])
-    magnetisation_array = np.array([])
-    magnetisation_error = np.array([])
-
-    with open(directory / "global_parameters.json", "r") as f:
-        global_config = json.load(f)
-    unique_lengths = global_config["physical_settings"]["L"]
-    unique_temp = global_config["physical_settings"]["temperature"]
-
-
-    for direc in params:
-        # print("direc", direc)
-        temp_array = np.append(temp_array, import_physical_parameter(direc, "temperature"))
-        length_array = np.append(length_array, import_physical_parameter(direc, "L")) 
-        magnetisation_obs = compute_average_magnetisation(direc, start)
-        magnetisation_array = np.append(magnetisation_array, magnetisation_obs.value)
-        magnetisation_error = np.append(magnetisation_error, magnetisation_obs.dvalue)
-
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
 
     fig, ax = plt.subplots(
         ncols=1,
         nrows=1
     )
 
-    cmap = plt.cm.tab20
-    length_array,temp_array, magnetisation_array, magnetisation_error = zip(*sorted(zip(length_array, temp_array, magnetisation_array, magnetisation_error)))
-    colors = cmap(np.arange(len(unique_lengths)*2))
-    inflection_array = []
-    inflection_err_array = []
-    for i,l in enumerate(unique_lengths):
-        xaxis = np.array(temp_array[i*len(unique_temp): (i+1)*len(unique_temp)])
-        yaxis = np.array(magnetisation_array[i * len(unique_temp):(i+1)*len(unique_temp)])
-        yerr = np.array(magnetisation_error[i * len(unique_temp):(i+1)*len(unique_temp)])
-        # Sorting
+    i = 0
+    critical_temp = []
+    critical_temp_err = []
+    l_values = []
+    for l, group in df.groupby("L"):
+        group = group.sort_values("temperature")
+        xaxis = group["temperature"].to_numpy()
+        yaxis = group[f"magnetisation_value"].to_numpy()
+        yerr = group[f"magnetisation_error"].to_numpy()
+
         idx = np.argsort(xaxis)
         xaxis = xaxis[idx]
         yaxis = yaxis[idx]
         yerr = yerr[idx]
-        x_infl, y_infl, infl_err = _find_inflection_points(xaxis, yaxis)
-        for i,x in enumerate(x_infl):
-            if ( x < 1.3 and x > 0.7):
-                ax.errorbar(1/l, x, yerr = infl_err[i], color = colors[0], fmt = ".")
-                inflection_array.append(x)
-                inflection_err_array.append(infl_err[i])
 
+        params, pcov = _fit_mag_to_tanh(xaxis, yaxis, yerr)
+        perr = np.sqrt(np.diag(pcov))
+
+        l_values.append(l)
+        critical_temp.append(params[1])
+        critical_temp_err.append(perr[1])
+
+    p0 = [1.0, 0.9]  # Initial guess for slope and intercept
+    omit_last = 1
+    t_c_array = critical_temp[omit_last:]
+    t_c_error = critical_temp_err[omit_last:]
+    print("t_c values for fit:", t_c_array)
+    values_to_fit = 1 / np.log(np.array(l_values))**2
+    popt, pcov = curve_fit(_linear_model, values_to_fit[omit_last:], t_c_array, p0=p0)
+    x_fit = np.linspace(-1, max(values_to_fit), 100)
+    y_fit = _linear_model(x_fit, *popt)
+    ax.errorbar(values_to_fit, critical_temp, yerr=critical_temp_err, fmt=".-", capsize=5)
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $T_{{BKT}} = {popt[1]:.3f}({pcov[1,1]:.1g})$")
     ax = _add_format_plot(
         axs = ax,
-        xlabel=r"Critical temperature $T_c$",
-        ylabel="Length $L$",
-        title = f"Inflection point vs length",
-        logscale=False,
+        xlabel=r"$ 1 / \ln(a / L) ^2$",
+        ylabel=r"$T_c(L)$",
+        title = f"Critial temperature",
     )
-    # ax.set_xlim(left=0.8)
-    ax.grid(which="both")
-    ax.set_xscale('log')
-    print("infl_arr = ", inflection_array)
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_t_vs_l.pdf")
     print("finished t vs l inflection plots")
 
-def _find_inflection_points(x:np.ndarray, y:np.ndarray):
-    assert len(y) == len(x), "magnetisation and temp should be same length" 
 
-    dy = np.gradient(y, x)
-    d2y = np.gradient(dy, x)
-    d3y = np.gradient(d2y, x)
+def _tanh(t, a, x0, b, c):
+    t = np.asarray(t, dtype=float)
+    return a * np.tanh((t - x0) / b) + c
 
-    refined_x = []
-    refined_y = []
-    x_errors = []
+def _fit_mag_to_tanh(x, y, yerr = None):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
 
-    for i in range(len(d2y) - 1):
-        if d2y[i] == 0:
-            refined_x.append(x[i])
-            errors.append(0)
-        elif d2y[i] * d2y[i+1] < 0:
-            x0, x1 = x[i], x[i+1]
-            y0, y1 = d2y[i], d2y[i+1]
+    if x.shape != y.shape:
+        raise ValueError("L and y must have the same shape")
+    if x.size < 4:
+        raise ValueError("Need at least 4 points for a 4-parameter tanh fit")
 
-            x_zero = x0 - y0 * (x1 - x0) / (y1 - y0)
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
 
-            y0, y1 = y[i], y[i + 1]
-            y_zero = y0 + (y1 - y0) * (x_zero - x0) / (x1 - x0)
+    amplitude_guess = 0.5 * (np.max(y) - np.min(y))
+    if np.isclose(amplitude_guess, 0.0):
+        amplitude_guess = 1.0
+
+    centre_guess = np.median(x)
+    scale_guess = max((np.max(x) - np.min(x)) / 4.0, 1e-6)
+    offset_guess = np.mean(y)
+    initial_guess = [amplitude_guess, centre_guess, scale_guess, offset_guess]
+
+    fit_kwargs = {"p0": initial_guess, "maxfev": 10000}
+    if yerr is not None:
+        yerr = np.asarray(yerr, dtype=float)
+        if yerr.shape != y.shape:
+            raise ValueError("yerr must have the same shape as y")
+        yerr = yerr[order]
+        fit_kwargs["sigma"] = yerr
+        fit_kwargs["absolute_sigma"] = True
+
+    params, covariance = curve_fit(_tanh, x, y, **fit_kwargs)
+    return params, covariance
 
 
-            refined_x.append(x_zero)
-            refined_y.append(y_zero)
-
-            hd = x[i+1] - x[i]
-            hs = x[i] - x[i-1] if i > 0 else hd
-
-            d3 = abs(d3y[i])
-
-            error = (hd * hs) / (max(d3, 1e-12))
-            x_errors.append(error)
-    return np.array(refined_x), np.array(refined_y), np.array(x_errors)
+def _linear_model(x, m,n):
+    return m * x + n
