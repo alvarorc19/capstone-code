@@ -201,7 +201,7 @@ def do_observable_plot(
                 axs = ax,
                 xlabel="Temperature, $k_BT$",
                 ylabel=observable_title,
-                title = f"{title.capitalize()} vs Temperature",
+                # title = f"{title.capitalize()} vs Temperature",
                 logscale = log_plot,
                 linear_fit = linear_fit,
             )
@@ -231,7 +231,7 @@ def do_observable_plot(
                 axs = ax,
                 xlabel="Length, $L/a$",
                 ylabel=observable_title,
-                title = f"{title.capitalize()} vs Length",
+                # title = f"{title.capitalize()} vs Length",
                 logscale = log_plot,
                 linear_fit = linear_fit,
             )
@@ -296,14 +296,15 @@ def _add_format_plot(
         axs:plt.axes,
         xlabel:str,
         ylabel:str,
-        title:str,
+        title:str | None = None,
         logscale:bool = False,
         linear_fit:bool = False,
     ) -> plt.axes:
 
     axs.set_xlabel(xlabel)
     axs.set_ylabel(ylabel)
-    axs.set_title(title)
+    if title is not None:
+        axs.set_title(title)
 
     if (logscale and not linear_fit):
         axs.set_yscale('log')
@@ -478,7 +479,7 @@ def do_magnetisation_inflection_plot(
             axs = ax,
             xlabel="Temperature, $k_BT$",
             ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
-            title = f"Magnetisation vs Temperature, inflection points",
+            # title = f"Magnetisation vs Temperature, inflection points",
         )
         i+=1
 
@@ -546,7 +547,7 @@ def do_inflection_vs_length_plot(
         axs = ax,
         xlabel=f"$ 1 / \ln(a / L) ^{dim}$",
         ylabel=r"$k_BT_c(L)$",
-        title = f"Critial temperature",
+        # title = f"Critial temperature",
     )
     ax.set_xlim(-0.01,max(values_to_fit)*1.1)
 
