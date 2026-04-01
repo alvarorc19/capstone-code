@@ -177,7 +177,7 @@ def do_observable_plot(
     )
 
     cmap = plt.cm.tab20
-    colors = cmap(np.arange(10))
+    colors = cmap(np.arange(30))
     if x_data == "temperature":
         i = 0
         for l, group in df.groupby("L"):
@@ -190,7 +190,7 @@ def do_observable_plot(
                 xaxis = xaxis,
                 yaxis = yaxis,
                 yerr = yerr,
-                data_label = f"$L = {l}$",
+                data_label = f"$L/a = {l}$",
                 main_color = colors[i],
                 secondary_color = colors[i+1],
                 marker = ".-",
@@ -199,7 +199,7 @@ def do_observable_plot(
             title = observable.replace("_", " ")
             ax = _add_format_plot(
                 axs = ax,
-                xlabel="Temperature, $T$",
+                xlabel="Temperature, $k_BT$",
                 ylabel=observable_title,
                 title = f"{title.capitalize()} vs Temperature",
                 logscale = log_plot,
@@ -219,7 +219,7 @@ def do_observable_plot(
                 xaxis = xaxis,
                 yaxis = yaxis,
                 yerr = yerr,
-                data_label = f"$T = {t}$",
+                data_label = f"$k_BT = {t}$",
                 linear_fit = linear_fit,
                 log_fit = log_fit,
                 main_color = colors[i],
@@ -229,7 +229,7 @@ def do_observable_plot(
             title = observable.replace("_", " ")
             ax = _add_format_plot(
                 axs = ax,
-                xlabel="Length, $L$",
+                xlabel="Length, $L/a$",
                 ylabel=observable_title,
                 title = f"{title.capitalize()} vs Length",
                 logscale = log_plot,
@@ -338,7 +338,7 @@ def _add_format_plot(
 def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:int = 0):
     # Add Obs crap
 
-    plt.tight_layout()
+    # plt.tight_layout()
     saving_path = directory.parent.parent / "analyze" / "output"/f"thermalisation_{directory.name}"
 
     saving_path.mkdir(parents = True, exist_ok = True)
@@ -387,8 +387,6 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
             nrows=1,
             figsize = (9,6)
         )
-        fig_energy.set_facecolor("#ECEFF4")
-        ax2.set_facecolor("#ECEFF4")
 
         ax2.plot(energy[start:], color = "chartreuse", alpha = 0.5)
         ax2.set_ylabel(r"Energy $E$")
@@ -470,7 +468,7 @@ def do_magnetisation_inflection_plot(
             xaxis = xaxis,
             yaxis = yaxis,
             yerr = yerr,
-            data_label = f"$L = {int(l)}$",
+            data_label = f"$L/a = {int(l)}$",
             main_color = colors[i],
             secondary_color = colors[i+1],
             marker = "."
@@ -478,27 +476,24 @@ def do_magnetisation_inflection_plot(
 
         ax = _add_format_plot(
             axs = ax,
-            xlabel="Temperature, $T$",
+            xlabel="Temperature, $k_BT$",
             ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
             title = f"Magnetisation vs Temperature, inflection points",
         )
         i+=1
 
     saving_path.mkdir(parents = True, exist_ok = True)
-    fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf")
+    fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf", bbox_inches="tight")
     print("finished magnetisation inflection plots")
 
 def do_inflection_vs_length_plot(
         directory:pathlib.Path, 
         is_deep:bool = False,
-        start:int = 0
+        start:int = 0,
+        omit_last:int = 0,
     ):
 
-    if is_deep:
-        saving_path = directory.parent.parent.parent / "analyze" / "output"/"img_dump"
-    else:
-        saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
-
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
     csv_file = directory / "ensemble_observables.csv"
     if csv_file.exists():
         df = pd.read_csv(csv_file)
@@ -507,6 +502,7 @@ def do_inflection_vs_length_plot(
         df = pd.read_csv(csv_file)
 
     df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    dim = import_physical_parameter(directory / f"{directory.name}_0" / "parameter-config-0", "dimension")
 
     fig, ax = plt.subplots(
         ncols=1,
@@ -535,25 +531,29 @@ def do_inflection_vs_length_plot(
         critical_temp.append(params[1])
         critical_temp_err.append(perr[1])
 
+
+
     p0 = [1.0, 0.9]  # Initial guess for slope and intercept
-    omit_last = 1
     t_c_array = critical_temp[omit_last:]
     print("t_c values for fit:", t_c_array)
-    values_to_fit = 1 / np.log(np.array(l_values))**2
+    values_to_fit = 1 / np.log(np.array(l_values))**dim
     popt, pcov = curve_fit(_linear_model, values_to_fit[omit_last:], t_c_array, p0=p0)
     x_fit = np.linspace(-1, max(values_to_fit), 100)
     y_fit = _linear_model(x_fit, *popt)
     ax.errorbar(values_to_fit, critical_temp, yerr=critical_temp_err, fmt=".-", capsize=5)
-    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $T_{{BKT}} = {popt[1]:.3f}({pcov[1,1]:.1g})$")
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $k_BT_{{BKT}} = {popt[1]:.3f}({pcov[1,1]:.1g})$")
     ax = _add_format_plot(
         axs = ax,
-        xlabel=r"$ 1 / \ln(a / L) ^2$",
-        ylabel=r"$T_c(L)$",
+        xlabel=f"$ 1 / \ln(a / L) ^{dim}$",
+        ylabel=r"$k_BT_c(L)$",
         title = f"Critial temperature",
     )
+    ax.set_xlim(-0.01,max(values_to_fit)*1.1)
+
+
 
     saving_path.mkdir(parents = True, exist_ok = True)
-    fig.savefig(saving_path / f"{directory.name}_t_vs_l.pdf")
+    fig.savefig(saving_path / f"{directory.name}_t_vs_l.pdf", bbox_inches="tight")
     print("finished t vs l inflection plots")
 
 

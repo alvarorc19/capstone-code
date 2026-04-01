@@ -34,21 +34,23 @@ def main():
     # project_name = "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps"
     # project_name = "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps"
     # project_name = "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps"
-    project_name = "cluster_run"
-    is_deep = False
+    is_deep = True
     rg = False
     start_step = 200
     # parameter_combination = 2
-    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
-    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
-    project_path = project_root / project_name
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    project_paths = [
+        project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
+        project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
+        project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps"
+    ]
     # config = toml.load(project_path / "config.toml")
     observables = [
         "magnetisation",
         "energy",
         "specific_heat",
         "susceptibility",
-        # "binder_cumulant",
         "energy_per_spin",
         "susceptibility_per_spin",
         "specific_heat_per_spin",
@@ -61,38 +63,44 @@ def main():
     observables_titles = [
         r"Magnetisation $\langle |m| \rangle$",
         r"Energy $\langle E \rangle$",
-        "Specific Heat $C_H$",
+        "Specific Heat $C/k_B$",
         r"Magnetic Susceptibility $\chi$",
-        # r"Binder cumulant $U_\infty$",
         r"Energy per spin $e$",
         r"Magnetic Susceptibility per spin $\chi / N$",
-        r"Specific Heat per spin $c_H$",
+        r"Specific Heat per spin $c/k_B$",
         r"Susceptibility $\chi$",
         r"Correlation length $\xi = \langle n \rangle$",
         r"Correlation length per spin$\xi /N$",
         r"Susceptibility per spin $\chi / N$",
     ]
 
-    # do_order_parameter_plot(project_path, is_deep,0)
-    do_magnetisation_inflection_plot(project_path, is_deep, start_step)
-    # do_renormalisation_plot(project_path, is_deep, start_step)
-    get_observables_csv(project_path, is_deep, start_step, rg)
-    do_inflection_vs_length_plot(project_path, is_deep, start_step)
-    # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
+    omit_values = [0,0,0]
+    i = 0
+    for project_path in project_paths:
 
-    # Create plots
-    for observable, observables_title in zip(observables, observables_titles):
-        do_observable_plot(
-            observable = observable,
-            observable_title = observables_title,
-            directory = project_path, 
-            is_deep = is_deep,
-            x_data = "temperature",
-            log_plot = False,
-            log_fit = False,
-            linear_fit = False,
-            start = start_step,
-        )
+        # do_order_parameter_plot(project_path, is_deep,0)
+        do_magnetisation_inflection_plot(project_path, is_deep, start_step)
+        # do_renormalisation_plot(project_path, is_deep, start_step)
+        get_observables_csv(project_path, is_deep, start_step, rg)
+        do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])
+        # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
+
+        # Create plots
+        for observable, observables_title in zip(observables, observables_titles):
+            do_observable_plot(
+                observable = observable,
+                observable_title = observables_title,
+                directory = project_path, 
+                is_deep = is_deep,
+                x_data = "temperature",
+                log_plot = False,
+                log_fit = False,
+                linear_fit = False,
+                start = start_step,
+            )
+        i+=1
+    project_path = project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps"
+    # do_order_parameter_plot(project_path, True,0)
 
 
     # do_finite_size_analysis_susceptibility(project_path, is_deep, start_step)
