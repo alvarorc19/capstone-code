@@ -596,19 +596,23 @@ void Simulation::initialise_writing() {
 
 }
 void Simulation::close_writing() {
-    parameters.lattice_set.reset();
+    if (parameters.dim == 2){
+        parameters.lattice_set.reset();
+    }
 
     parameters.magnetisation_set.reset();
     parameters.energy_set.reset();
     parameters.cluster_size_set.reset();
 
-    parameters.rg_magnetisation_set1.reset();
-    parameters.rg_magnetisation_set2.reset();
-    parameters.rg_magnetisation_set3.reset();
+    if (parameters.rg_method){
+        parameters.rg_magnetisation_set1.reset();
+        parameters.rg_magnetisation_set2.reset();
+        parameters.rg_magnetisation_set3.reset();
 
-    parameters.rg_energy_set1.reset();
-    parameters.rg_energy_set2.reset();
-    parameters.rg_energy_set3.reset();
+        parameters.rg_energy_set1.reset();
+        parameters.rg_energy_set2.reset();
+        parameters.rg_energy_set3.reset();
+    }
 
     if (file) {
         file->flush();
