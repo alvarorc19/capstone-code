@@ -168,6 +168,7 @@ def do_observable_plot(
     else:
         get_observables_csv(directory, is_deep, start, False)
         df = pd.read_csv(csv_file)
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
 
     fig, ax = plt.subplots(
         ncols=1,
@@ -437,6 +438,7 @@ def do_magnetisation_inflection_plot(
         get_observables_csv(directory, is_deep, start, False)
         df = pd.read_csv(csv_file)
     # plt.tight_layout()
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
 
 
     fig, ax = plt.subplots(
@@ -504,6 +506,8 @@ def do_inflection_vs_length_plot(
         get_observables_csv(directory, is_deep, start, False)
         df = pd.read_csv(csv_file)
 
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+
     fig, ax = plt.subplots(
         ncols=1,
         nrows=1
@@ -534,7 +538,6 @@ def do_inflection_vs_length_plot(
     p0 = [1.0, 0.9]  # Initial guess for slope and intercept
     omit_last = 1
     t_c_array = critical_temp[omit_last:]
-    t_c_error = critical_temp_err[omit_last:]
     print("t_c values for fit:", t_c_array)
     values_to_fit = 1 / np.log(np.array(l_values))**2
     popt, pcov = curve_fit(_linear_model, values_to_fit[omit_last:], t_c_array, p0=p0)
