@@ -40,6 +40,7 @@ def main():
     # parameter_combination = 2
     # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
     project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/code_outputs/0204projects")
     project_paths = [
         project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
         project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
@@ -59,6 +60,7 @@ def main():
         "correlation_length",
         "correlation_length_per_spin",
         "cluster_susceptibility_per_spin",
+        "binder_cumulant",
     ]
 
     observables_titles = [
@@ -73,6 +75,7 @@ def main():
         r"Correlation length $\xi$",
         r"Correlation length per spin $\xi /N$",
         r"Susceptibility per spin $\chi / N$",
+        r"Binder cumulant $U_L$",
     ]
 
     omit_values = [0,0,0]
