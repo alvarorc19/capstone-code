@@ -555,9 +555,9 @@ def do_inflection_vs_length_plot(
     ax.set_xlim(-0.01,max(values_to_fit)*1.1)
 
     with open(saving_path / f"{directory.name}_critical_temps.csv", "w") as f:
-        f.write("l_values,critical_temp,critical_temp_err")
+        f.write("l_values,critical_temp,critical_temp_err\n")
         for i, (t, terr, l) in enumerate(zip(critical_temp,critical_temp_err,l_values)):
-            f.write(f"{l},{t},{terr}")
+            f.write(f"{l},{t},{terr}\n")
 
     with open(saving_path / f"{directory.name}_t_bkt.txt", "w") as f:
         f.write(f"T_BKT = {popt[1]} with error {pcov[1,1]}")
