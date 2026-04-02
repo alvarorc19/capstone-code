@@ -331,7 +331,7 @@ def _add_format_plot(
     axs.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1),
               fancybox=True, shadow=True, ncol=5)
 
-    axs.grid()
+    axs.grid(True)
     axs.minorticks_on()
     axs.tick_params(axis='both', which='major', direction='in', length=7, top=True, right = True)
     axs.tick_params(axis='both', which='minor', direction='in', length=4, top=True, right = True)

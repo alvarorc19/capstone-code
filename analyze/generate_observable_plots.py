@@ -35,7 +35,7 @@ def main():
     # project_name = "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps"
     # project_name = "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps"
     is_deep = False
-    rg = True
+    rg = False
     start_step = 200
     # parameter_combination = 2
     project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
@@ -45,7 +45,8 @@ def main():
         # project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
         # project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
         # project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
-        project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps" 
+        project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps",
+        project_root / "20260402_30t2-0_2-2_3l8_40_dim3_20-3sweeps" 
     ]
     # config = toml.load(project_path / "config.toml")
     observables = [
@@ -85,7 +86,8 @@ def main():
         get_observables_csv(project_path, is_deep, start_step, rg)
         # do_order_parameter_plot(project_path, is_deep,0)
         do_magnetisation_inflection_plot(project_path, is_deep, start_step)
-        do_renormalisation_plot(project_path, is_deep, start_step)
+        if rg:
+            do_renormalisation_plot(project_path, is_deep, start_step)
         do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])
         # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
 

@@ -165,19 +165,21 @@ void Simulation::normal_run() {
     cluster_size.clear();
     spins_flipped = 0;
     int flip;
-    for (int i = 0; i < parameters.N - 100 ; i++){
+    for (int i = 0; i < parameters.N; i++){
         flip = spins_flipped; 
         do_cluster_step();
         cluster_size.emplace_back(spins_flipped - flip);
     }
 
-    for (int i = 0; i < 100; i++){
-        flip = spins_flipped; 
-        do_cluster_step();
-        cluster_size.emplace_back(spins_flipped - flip);
-        #pragma omp critical(HDF5)
-        {
-            write_lattice(i);
+    if (parameters.dim == 2){
+        for (int i = 0; i < 100; i++){
+            flip = spins_flipped; 
+            do_cluster_step();
+            cluster_size.emplace_back(spins_flipped - flip);
+            #pragma omp critical(HDF5)
+            {
+                write_lattice(i);
+            }
         }
     }
     
