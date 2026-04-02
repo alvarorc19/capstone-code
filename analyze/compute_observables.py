@@ -197,9 +197,9 @@ def compute_susceptibility_per_spin(directory:pathlib.Path, start:int = 0) -> pe
 
 def compute_binder_cumulant(directory:pathlib.Path, start:int = 0) -> pe.Obs:
     order_parameter_array = import_observable(directory, "magnetisation")
-    obs2 = pe.Obs([order_parameter_array[start:]**2], ["magnetisation"])
-    obs4 = pe.Obs([order_parameter_array[start:]**4], ["magnetisation"])
-    binder_obs = 1 - (obs4 / (2 * obs2**2))
+    obs2 = pe.Obs([order_parameter_array[start:]**2], ["ens"])
+    obs4 = pe.Obs([order_parameter_array[start:]**4], ["ens"])
+    binder_obs = 1 - (obs4 / (3 * obs2**2))
     binder_obs.gamma_method()
     return binder_obs
 
