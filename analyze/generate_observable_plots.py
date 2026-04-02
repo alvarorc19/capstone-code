@@ -62,7 +62,7 @@ def main():
     ]
 
     observables_titles = [
-        r"Magnetisation $\langle |m| \rangle$",
+        r"Magnetisation $\langle |\textbf{m}| \rangle$",
         r"Energy $\langle E \rangle$",
         "Specific Heat $C/k_B$",
         r"Magnetic Susceptibility $\chi$",
@@ -70,8 +70,8 @@ def main():
         r"Magnetic Susceptibility per spin $\chi / N$",
         r"Specific Heat per spin $c/k_B$",
         r"Susceptibility $\chi$",
-        r"Correlation length $\xi = \langle n \rangle$",
-        r"Correlation length per spin$\xi /N$",
+        r"Correlation length $\xi$",
+        r"Correlation length per spin $\xi /N$",
         r"Susceptibility per spin $\chi / N$",
     ]
 
