@@ -379,6 +379,7 @@ def do_order_parameter_plot(directory:pathlib.Path, is_deep:bool = False, start:
         )
 
         ax1.plot(magnetisation_array, color = "orangered", alpha = 0.5)
+        ax1.set_ylim(0,1)
         ax1.set_ylabel(r"Magnetisation $m$")
         ax1.set_xlabel(r"Time $t$ in MCS")
         fig_mag.savefig(saving_path / f"{direc.name}_magnetisation_time.pdf", bbox_inches = "tight")
