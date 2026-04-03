@@ -45,6 +45,7 @@ hpc_run.sh
 # Output
 analyze/output/*
 !analyze/output
+*.toml
 
 # Input
 utils/new_project.py

@@ -123,6 +123,7 @@ elif (not temp_array and length_array):
         direc = base / f"{project_name}_last"
         direc.mkdir(parents = True, exist_ok = False)
         for k in range(remaining):
+            l = length_array[num_sub_direc + k]
             parameters["physical_settings"]["L"] = l
 
             config_path = direc / f"parameter-config-{k}"
