@@ -46,9 +46,10 @@ def main():
     # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/code_outputs/0204projects")
     project_paths = [
         # HPC
-        project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
+        # project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
         project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
         project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
+        project_root / "20260403_t2-201_10l16-100_dim3_10-4sweeps"
         # project_root / "20260401_30t1_9-2_5_5l16-64_dim3_10-3sweeps"
         # # Thinkpad
         # project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps" 
@@ -86,7 +87,7 @@ def main():
         r"Binder cumulant $U_L$",
     ]
 
-    omit_values = [0,0,1,0,0,0,0,0,0,0]
+    omit_values = [0,1,0,0,0,0,0,0,0,0]
     i = 0
     for project_path in project_paths:
 
