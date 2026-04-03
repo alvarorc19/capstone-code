@@ -362,7 +362,7 @@ def do_susceptibility_vs_length_plot(
 
     df = df[df["energy_value"] != 0.0].reset_index(drop=True)
     if is_deep:
-        dim = import_physical_parameter(directory / f"{directory.name}_0" / "parameter-config-0", "dimension")
+        dim = import_physical_parameter(directory / f"{directory.name}_last" / "parameter-config-0", "dimension")
     else:
         dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
 
@@ -374,8 +374,8 @@ def do_susceptibility_vs_length_plot(
     colors = cmap(np.arange(20))
 
     xaxis = df["L"].to_numpy()
-    yaxis = df[f"susceptibility_per_spin_value"].to_numpy()
-    yerr = df[f"susceptibility_per_spin_error"].to_numpy()
+    yaxis = df[f"cluster_susceptibility_value"].to_numpy()
+    yerr = df[f"cluster_susceptibility_error"].to_numpy()
 
     idx = np.argsort(xaxis)
     xaxis = xaxis[idx]
@@ -392,14 +392,14 @@ def do_susceptibility_vs_length_plot(
     f, err = _obtain_numbers_format(error)
     x_fit = np.linspace(min(xaxis), max(xaxis), 300)
     y_fit = np.exp(popt[1]) * x_fit**popt[0]
-    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $\gamma / \\nu = {popt[0]:.{int(f)}f}({int(err)})$", colors[1])
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $\gamma / \\nu = {popt[0]:.{int(f)}f}({int(err)})$", color = colors[1])
 
     ax = _add_scatter_data(
         axs = ax,
         xaxis = xaxis,
         yaxis = yaxis,
         yerr = yerr,
-        data_label = f"$k_B T_c = {df.at[0,"temperature"]}$",
+        data_label = f"$k_B T_c = {df.at[0,'temperature']}$",
         main_color = colors[0],
         secondary_color = colors[1],
         marker = "."
@@ -409,7 +409,7 @@ def do_susceptibility_vs_length_plot(
     ax = _add_format_plot(
         axs = ax,
         xlabel = "Length $L/a$",
-        ylabel = "Susceptibility per spin $\chi / N$",
+        ylabel = "Susceptibility $\chi$",
     )
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
@@ -418,5 +418,151 @@ def do_susceptibility_vs_length_plot(
     fig.savefig(saving_path / f"{directory.name}_gamma_nu_critical.pdf", bbox_inches="tight")
     print("finished susceptibility for critical exponents plot")
 
+def do_specific_heat_vs_length_plot(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        omit_last:int = 0,
+    ):
+
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_last" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(20))
+
+    xaxis = df["L"].to_numpy()
+    yaxis = df[f"specific_heat_value"].to_numpy()
+    yerr = df[f"specific_heat_error"].to_numpy()
+
+    idx = np.argsort(xaxis)
+    xaxis = xaxis[idx]
+    yaxis = yaxis[idx]
+    yerr = yerr[idx]
+
+    p0 = [1.0, 0.9]  # Initial guess for slope and intercept
+    log_x = np.log(xaxis)
+    log_y = np.log(yaxis)
+    log_y_err = np.log(yerr)
+    popt, pcov = curve_fit(_linear_model, log_x, log_y, p0=p0)
+    perr = np.sqrt(np.diag(pcov))
+    error = perr[0]
+    f, err = _obtain_numbers_format(error)
+    x_fit = np.linspace(min(xaxis), max(xaxis), 300)
+    y_fit = np.exp(popt[1]) * x_fit**popt[0]
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $\\alpha / \\nu = {popt[0]:.{int(f)}f}({int(err)})$", color = colors[1])
+
+    ax = _add_scatter_data(
+        axs = ax,
+        xaxis = xaxis,
+        yaxis = yaxis,
+        yerr = yerr,
+        data_label = f"$k_B T_c = {df.at[0,'temperature']}$",
+        main_color = colors[0],
+        secondary_color = colors[1],
+        marker = "."
+    )
+    ax.loglog()
+
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel = "Length $L/a$",
+        ylabel = "Specific heat $C$",
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
+    saving_path.mkdir(parents = True, exist_ok = True)
+    fig.savefig(saving_path / f"{directory.name}_alpha_nu_critical.pdf", bbox_inches="tight")
+    print("finished specific heat for critical exponents plot")
+
+def do_binder_cumulant_vs_length_plot(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        omit_last:int = 0,
+    ):
+
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_last" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(20))
+
+    xaxis = df["L"].to_numpy()
+    yaxis = df[f"binder_cumulant_slope_value"].to_numpy()
+    yerr = df[f"binder_cumulant_slope_error"].to_numpy()
+
+    idx = np.argsort(xaxis)
+    xaxis = xaxis[idx]
+    yaxis = yaxis[idx]
+    yerr = yerr[idx]
+
+    p0 = [1.0, 0.9]  # Initial guess for slope and intercept
+    log_x = np.log(xaxis[3:])
+    yaxis = np.abs(yaxis)
+    log_y = np.log(yaxis[3:])
+    log_y_err = np.log(yerr)
+    popt, pcov = curve_fit(_linear_model, log_x, log_y, p0=p0)
+    perr = np.sqrt(np.diag(pcov))
+    error = perr[0]
+    f, err = _obtain_numbers_format(error)
+    x_fit = np.linspace(min(xaxis), max(xaxis), 300)
+    y_fit = np.exp(popt[1]) * x_fit**popt[0]
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $\\nu = {1 / popt[0]:.{int(f)}f}({int(err)})$", color = colors[1])
+
+    ax = _add_scatter_data(
+        axs = ax,
+        xaxis = xaxis,
+        yaxis = yaxis,
+        yerr = yerr,
+        data_label = f"$k_B T_c = {df.at[0,'temperature']}$",
+        main_color = colors[0],
+        secondary_color = colors[1],
+        marker = "."
+    )
+    ax.loglog()
+
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel = "Length $L/a$",
+        ylabel = "Binder cumulant slope $\partial U_L / \partial \\beta |\\beta_c$",
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
+    saving_path.mkdir(parents = True, exist_ok = True)
+    fig.savefig(saving_path / f"{directory.name}_nu_critical.pdf", bbox_inches="tight")
+    print("finished binder cumulant for critical exponents plot")
 
 
