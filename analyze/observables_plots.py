@@ -57,7 +57,7 @@ def _find_observable_function(observable:str):
         "correlation_length":compute_cluster_size,
         "correlation_length_per_spin":compute_cluster_size_per_spin,
         "binder_cumulant":compute_binder_cumulant,
-        "binder_cumulant_slope":compute_binder_cumulant_slope,
+        # "binder_cumulant_slope":compute_binder_cumulant_slope,
     }
     return observable_functions[observable]
 
@@ -70,7 +70,7 @@ def get_observables_csv(
 
     saving_path = directory
     df = pd.DataFrame()
-    observables = ["magnetisation", "energy", "susceptibility", "specific_heat", "energy_per_spin", "susceptibility_per_spin", "specific_heat_per_spin", "cluster_susceptibility","cluster_susceptibility_per_spin", "correlation_length", "correlation_length_per_spin", "binder_cumulant", "binder_cumulant_slope"]
+    observables = ["magnetisation", "energy", "susceptibility", "specific_heat", "energy_per_spin", "susceptibility_per_spin", "specific_heat_per_spin", "cluster_susceptibility","cluster_susceptibility_per_spin", "correlation_length", "correlation_length_per_spin", "binder_cumulant"]
 
     if is_deep:
         sub_dir = [x for x in directory.iterdir() if x.is_dir()]

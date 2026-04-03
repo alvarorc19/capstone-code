@@ -21,6 +21,7 @@ from finite_size_plots import (
     do_susceptibility_vs_length_plot,
     do_specific_heat_vs_length_plot,
     do_binder_cumulant_vs_length_plot,
+    do_correlation_length_vs_length_plot,
 )
 from rg_plots import(
     do_renormalisation_plot,
@@ -75,7 +76,7 @@ def main():
         "correlation_length_per_spin",
         "cluster_susceptibility_per_spin",
         "binder_cumulant",
-        "binder_cumulant_slope",
+        # "binder_cumulant_slope",
     ]
 
     observables_titles = [
@@ -91,7 +92,7 @@ def main():
         r"Correlation length per spin $\xi /N$",
         r"Susceptibility per spin $\chi / N$",
         r"Binder cumulant $U_L$",
-        r"Binder cumulant slope $\partial U_L / \partial \beta|_{\beta_c}$",
+        # r"Binder cumulant slope $\partial U_L / \partial \beta|_{\beta_c}$",
     ]
 
     omit_values = [0,1,0,0,0,0,0,0,0,0]
@@ -101,7 +102,7 @@ def main():
         get_observables_csv(project_path, is_deep, start_step, rg)
         do_susceptibility_vs_length_plot(project_path, is_deep, start_step)
         do_specific_heat_vs_length_plot(project_path, is_deep, start_step)
-        do_binder_cumulant_vs_length_plot(project_path, is_deep, start_step)
+        # do_correlation_length_vs_length_plot(project_path, is_deep, start_step)
         # do_order_parameter_plot(project_path, is_deep,0)
         # do_magnetisation_inflection_plot(project_path, is_deep, start_step)
         # do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])

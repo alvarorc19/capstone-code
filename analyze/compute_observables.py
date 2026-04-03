@@ -217,23 +217,23 @@ def compute_binder_cumulant_slope(directory:pathlib.Path, start:int = 0) -> pe.O
     dim = import_physical_parameter(directory, "dimension")
     N = length ** dim
     magnetisation = np.sqrt((x_mag)**2 + (y_mag)**2) / N
+    energy = import_observable(directory, "energy")
     obs2 = pe.Obs([magnetisation[start:]**2], ["ens"])
     obs4 = pe.Obs([magnetisation[start:]**4], ["ens"])
-    binder_obs = 1 - (obs4 / (3 * obs2**2))
-    binder_val = 1 - (magnetisation**4 / (3 * magnetisation**2))
+    energy_obs2 = pe.Obs([(magnetisation**2 * energy)[start:]], ["ens"])
+    energy_obs4 = pe.Obs([(magnetisation**4 * energy)[start:]], ["ens"])
 
-    energy = import_observable(directory, "energy")
-    energy_obs = pe.Obs([energy[start:]], ["ens"])
-    energy_binder = energy * binder_val
-    energy_binder_obs = pe.Obs([energy_binder[start:]], ["ens"])
+    obs2.gamma_method()
+    obs4.gamma_method()
+    energy_obs2.gamma_method()
+    energy_obs4.gamma_method()
 
-    binder_obs.gamma_method()
-    energy_obs.gamma_method()
-    energy_binder_obs.gamma_method()
+    dobs2 = - (energy_obs2 - obs2 * energy)    
+    dobs4 = - (energy_obs4 - obs4 * energy)    
 
-    derivative_obs = energy_binder_obs - binder_obs * energy_obs
-    derivative_obs.gamma_method()
-    return derivative_obs
+    dU_beta = - (1 / (3 * obs2**2)) * dobs4 + (2 * obs4 / (3 * obs2**3)) * dobs2
+
+    return dU_beta
 
 
 # C_H \sim |\epsilon|^{-\alpha}
