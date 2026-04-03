@@ -207,6 +207,9 @@ def do_observable_plot(
                 logscale = log_plot,
                 linear_fit = linear_fit,
             )
+            handles, labels = ax.get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,ncol=5)
             i+=1
 
     elif x_data == "length":
@@ -237,6 +240,10 @@ def do_observable_plot(
                 logscale = log_plot,
                 linear_fit = linear_fit,
             )
+
+            handles, labels = ax.get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,ncol=5)
             j+=1
     else:
         print("This is not incorporated, say temperature or length")
@@ -328,8 +335,7 @@ def _add_format_plot(
                      box.width, box.height * 0.9])
 
 # Put a legend below current axis
-    axs.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1),
-              fancybox=True, shadow=True, ncol=5)
+    axs.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,ncol=5)
 
     axs.grid(True)
     axs.minorticks_on()
@@ -477,14 +483,18 @@ def do_magnetisation_inflection_plot(
             secondary_color = colors[i+1],
             marker = "."
         )
-
-        ax = _add_format_plot(
-            axs = ax,
-            xlabel="Temperature, $k_BT$",
-            ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
-            # title = f"Magnetisation vs Temperature, inflection points",
-        )
         i+=1
+
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel="Temperature, $k_BT$",
+        ylabel=r"Magnetisation $\langle |\mathbf{m}| \rangle$",
+        # title = f"Magnetisation vs Temperature, inflection points",
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,ncol=5)
 
     saving_path.mkdir(parents = True, exist_ok = True)
     fig.savefig(saving_path / f"{directory.name}_magnetisation_inflection_point.pdf", bbox_inches="tight")
@@ -548,14 +558,25 @@ def do_inflection_vs_length_plot(
     x_fit = np.linspace(-1, max(values_to_fit), 100)
     y_fit = _linear_model(x_fit, *popt)
     ax.errorbar(values_to_fit, critical_temp, yerr=critical_temp_err, fmt=".-", capsize=5)
-    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $k_BT_{{BKT}} = {popt[1]:.3f}({pcov[1,1]:.1g})$")
+    error = pcov[1,1]
+    f, err = _obtain_numbers_format(error)
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $k_BT_{{BKT}} = {popt[1]:.{int(f)}f}({int(err)})$")
     ax = _add_format_plot(
         axs = ax,
         xlabel=f"$ 1 / \ln(a / L) ^{dim}$",
         ylabel=r"$k_BT_c(L)$",
         # title = f"Critial temperature",
     )
-    ax.set_xlim(-0.01,max(values_to_fit)*1.1)
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
+    fig.tight_layout()
+    ax.set_xlim(0,max(values_to_fit)*1.1)
+    if dim == 2:
+        ax.set_ylim(0.7, 1.3)
+    elif dim == 3:
+        ax.set_ylim(1.7, 2.5)
+
 
     with open(saving_path / f"{directory.name}_critical_temps.csv", "w") as f:
         f.write("l_values,critical_temp,critical_temp_err\n")
@@ -611,3 +632,15 @@ def _fit_mag_to_tanh(x, y, yerr = None):
 
 def _linear_model(x, m,n):
     return m * x + n
+
+def _obtain_numbers_format(err:float):
+    err = abs(err)
+    if err == 0:
+        return None, None  # or (0, 0) depending on your use case
+
+    exponent = np.floor(np.log10(err))
+    first_digit = int(err / 10**exponent)
+
+    decimals = -exponent if exponent < 0 else 0
+
+    return decimals, first_digit
