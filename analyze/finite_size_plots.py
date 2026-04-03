@@ -18,15 +18,22 @@ import itertools
 from matplotlib.animation import FuncAnimation
 from tqdm import tqdm
 from matplotlib.widgets import Slider
+from scipy.optimize import curve_fit
 
 from compute_observables import (
     compute_reduced_temperature,
     compute_susceptibility_scaling_function,
+    compute_binder_cumulant,
 )
 from utils.h5_utils import (
     import_physical_parameter,
 )
-from observables_plots import _add_format_plot
+from observables_plots import (
+    _add_format_plot,
+    _add_scatter_data,
+    _linear_model,
+    _obtain_numbers_format,
+)
 
 def do_finite_size_analysis_susceptibility(directory:pathlib.Path, is_deep:bool = False, start: int = 0):
     observable = "susceptibility"
@@ -200,3 +207,216 @@ def _make_finite_size_plot(
         scatter_array.append(error_plot)
 
     return scatter_array, ax
+
+def compute_critical_temp_binder(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0
+    ):
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    # plt.tight_layout()
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1,
+        figsize = (9,6)
+    )
+
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(30))
+    sigmoids_params = []
+    sigmoids_err = []
+
+    i = 0
+    for l, group in df.groupby("L"):
+        group = group.sort_values("temperature")
+        xaxis = group["temperature"].to_numpy()
+        yaxis = group[f"binder_cumulant_value"].to_numpy()
+        yerr = group[f"binder_cumulant_error"].to_numpy()
+
+        idx = np.argsort(xaxis)
+        xaxis = xaxis[idx]
+        yaxis = yaxis[idx]
+        yerr = yerr[idx]
+
+        params, pcov = _fit_to_sigmoid(xaxis, yaxis, yerr)
+        temperature_fit = np.linspace(np.min(xaxis), np.max(xaxis), 300)
+        ax.plot(temperature_fit, _sigmoid(temperature_fit, *params),"--", color = colors[i])
+        sigmoids_params.append(params)
+        sigmoids_err.append(pcov)
+
+        ax = _add_scatter_data(
+            axs = ax,
+            xaxis = xaxis,
+            yaxis = yaxis,
+            yerr = yerr,
+            data_label = f"$L/a = {int(l)}$",
+            main_color = colors[i],
+            secondary_color = colors[i+1],
+            marker = "."
+        )
+        i+=1
+
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel="Temperature, $k_BT$",
+        ylabel=r"Binder cumulant $U_L$",
+        # title = f"Magnetisation vs Temperature, inflection points",
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,ncol=5)
+
+    crossing_points = _extract_crossing_points(xaxis, sigmoids_params)
+    print("crossing_points = ", crossing_points)
+    print("t_bkt = ", np.average(crossing_points))
+    print("err t_bkt = ", np.std(crossing_points))
+
+    with open(saving_path / f"{directory.name}_cumulant.txt", "w") as f:
+        f.write("Crossing points\n[")
+        for point in crossing_points:
+            f.write(f"{point}")
+        f.write("]\n\n\n")
+        f.write(f"T_BKT = {np.average(crossing_points)} pm {np.std(crossing_points)}")
+
+    saving_path.mkdir(parents = True, exist_ok = True)
+    fig.savefig(saving_path / f"{directory.name}_cumulant_crossing.pdf", bbox_inches="tight")
+    print("finished magnetisation inflection plots")
+
+def _fit_to_sigmoid(x, y, yerr = None):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if x.shape != y.shape:
+        raise ValueError("L and y must have the same shape")
+    if x.size < 4:
+        raise ValueError("Need at least 4 points for a 4-parameter tanh fit")
+
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
+
+    amplitude_guess = np.max(y) - np.min(y)
+    centre_guess = np.median(x)
+    slope_guess = 1.0
+    offset_guess = np.min(y)
+    initial_guess = [amplitude_guess, centre_guess, slope_guess, offset_guess]
+
+    fit_kwargs = {"p0": initial_guess, "maxfev": 100000}
+    if yerr is not None:
+        yerr = np.asarray(yerr, dtype=float)
+        if yerr.shape != y.shape:
+            raise ValueError("yerr must have the same shape as y")
+        yerr = yerr[order]
+        fit_kwargs["sigma"] = yerr
+        fit_kwargs["absolute_sigma"] = True
+
+    params, covariance = curve_fit(_sigmoid, x, y, **fit_kwargs)
+    return params, covariance
+
+def _sigmoid(x, a, b, c, d):
+    denom = 1 + np.exp(-c*(x-b))
+    return a / denom + d
+
+def _extract_crossing_points(x_values,y_params):
+    y_params = np.asarray(y_params)
+    x_values = np.linspace(np.min(x_values), np.max(x_values), 500)
+    crossings = []
+
+    for i in range(len(y_params) -1):
+        params1 = y_params[i]
+        params2 = y_params[i+1]
+
+        curve1 = _sigmoid(x_values, *params1)
+        curve2 = _sigmoid(x_values, *params2)
+
+        diff = curve2 - curve1
+        crossing_idx = np.where(np.diff(np.sign(diff)) != 0)[0]
+        for idx in crossing_idx:
+            crossings.append(x_values[idx])
+
+    return crossings
+
+def do_susceptibility_vs_length_plot(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        omit_last:int = 0,
+    ):
+
+    saving_path = directory.parent.parent / "analyze" / "output"/"img_dump"
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_0" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(20))
+
+    xaxis = df["L"].to_numpy()
+    yaxis = df[f"susceptibility_per_spin_value"].to_numpy()
+    yerr = df[f"susceptibility_per_spin_error"].to_numpy()
+
+    idx = np.argsort(xaxis)
+    xaxis = xaxis[idx]
+    yaxis = yaxis[idx]
+    yerr = yerr[idx]
+
+    p0 = [1.0, 0.9]  # Initial guess for slope and intercept
+    log_x = np.log(xaxis)
+    log_y = np.log(yaxis)
+    log_y_err = np.log(yerr)
+    popt, pcov = curve_fit(_linear_model, log_x, log_y, p0=p0)
+    perr = np.sqrt(np.diag(pcov))
+    error = perr[0]
+    f, err = _obtain_numbers_format(error)
+    x_fit = np.linspace(min(xaxis), max(xaxis), 300)
+    y_fit = np.exp(popt[1]) * x_fit**popt[0]
+    ax.plot(x_fit, y_fit, "--", label=f"Linear fit, $\gamma / \\nu = {popt[0]:.{int(f)}f}({int(err)})$", colors[1])
+
+    ax = _add_scatter_data(
+        axs = ax,
+        xaxis = xaxis,
+        yaxis = yaxis,
+        yerr = yerr,
+        data_label = f"$k_B T_c = {df.at[0,"temperature"]}$",
+        main_color = colors[0],
+        secondary_color = colors[1],
+        marker = "."
+    )
+    ax.loglog()
+
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel = "Length $L/a$",
+        ylabel = "Susceptibility per spin $\chi / N$",
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
+    saving_path.mkdir(parents = True, exist_ok = True)
+    fig.savefig(saving_path / f"{directory.name}_gamma_nu_critical.pdf", bbox_inches="tight")
+    print("finished susceptibility for critical exponents plot")
+
+
+

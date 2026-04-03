@@ -15,7 +15,11 @@ from observables_plots import (
     do_magnetisation_inflection_plot,
     do_inflection_vs_length_plot,
 )
-from finite_size_plots import do_finite_size_analysis_susceptibility
+from finite_size_plots import (
+    do_finite_size_analysis_susceptibility,
+    compute_critical_temp_binder,
+    do_susceptibility_vs_length_plot,
+)
 from rg_plots import(
     do_renormalisation_plot,
     do_biggest_L_renormalisation_plot,
@@ -37,22 +41,23 @@ plt.rcParams.update({
 # plt.rcParams.update({'font.size':14})
 
 def main():
-    is_deep = True
+    is_deep = False
     rg = False
     start_step = 200
     # parameter_combination = 2
-    # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
-    project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
+    project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/capstone-code/projects")
+    # project_root = pathlib.Path("/home/users/romeroca/capstone-code/projects")
     # project_root = pathlib.Path("/home/alvaro/Documents/trinity/year4/capstone/code_outputs/0204projects")
     project_paths = [
         # HPC
-        project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
-        project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
-        project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
+        # project_root / "20260326_30t1_7-2_7_5l16-100_dim3_10-5sweeps",
+        # project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
+        # project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
         # project_root / "20260401_30t1_9-2_5_5l16-64_dim3_10-3sweeps"
         # # Thinkpad
-        # project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps" 
-        # project_root / "20260402_30t2-0_2-2_3l8_40_dim3_20-3sweeps"
+        project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps",
+        project_root / "20260402_30t2-0_2-2_3l8_40_dim3_20-3sweeps",
+        project_root / "rg_test2"
     ]
 
     # config = toml.load(project_path / "config.toml")
@@ -91,14 +96,18 @@ def main():
     for project_path in project_paths:
 
         get_observables_csv(project_path, is_deep, start_step, rg)
+        do_susceptibility_vs_length_plot(project_path, is_deep, start_step)
         # do_order_parameter_plot(project_path, is_deep,0)
         do_magnetisation_inflection_plot(project_path, is_deep, start_step)
+        # do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])
         if rg:
             do_renormalisation_plot(project_path, is_deep, start_step)
-        do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])
         if rg:
             # do_biggest_L_renormalisation_plot(project_path, is_deep, start_step)
             do_renormalisation_plot(project_path, is_deep, start_step)
+
+        compute_critical_temp_binder(project_path, is_deep, start_step)
+
 
         # Create plots
         for observable, observables_title in zip(observables, observables_titles):
