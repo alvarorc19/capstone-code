@@ -20,7 +20,6 @@ from finite_size_plots import (
     compute_critical_temp_binder,
     do_susceptibility_vs_length_plot,
     do_specific_heat_vs_length_plot,
-    do_binder_cumulant_vs_length_plot,
     do_correlation_length_vs_length_plot,
 )
 from rg_plots import(
@@ -54,7 +53,8 @@ def main():
         # HPC
         # project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
         # project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
-        project_root / "20260403_t2-201_10l16-100_dim3_10-4sweeps"
+        project_root / "20260403_t2-201_10l16-100_dim3_10-4sweeps",
+        project_root / "20260403_t0-895_10l16-1024_dim2_10-4sweeps"
         # project_root / "20260401_30t1_9-2_5_5l16-64_dim3_10-3sweeps"
         # # Thinkpad
         # project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps",
@@ -102,7 +102,7 @@ def main():
         get_observables_csv(project_path, is_deep, start_step, rg)
         do_susceptibility_vs_length_plot(project_path, is_deep, start_step)
         do_specific_heat_vs_length_plot(project_path, is_deep, start_step)
-        # do_correlation_length_vs_length_plot(project_path, is_deep, start_step)
+        do_correlation_length_vs_length_plot(project_path, is_deep, start_step)
         # do_order_parameter_plot(project_path, is_deep,0)
         # do_magnetisation_inflection_plot(project_path, is_deep, start_step)
         # do_inflection_vs_length_plot(project_path, is_deep, start_step, omit_values[i])

@@ -262,7 +262,7 @@ def _add_scatter_data(
         axs:plt.axes,
         xaxis:np.ndarray,
         yaxis:np.ndarray,
-        yerr:np.ndarray | float,
+        yerr:np.ndarray | float | None = None,
         data_label:str = "",
         linear_fit:bool = False,
         log_fit:bool = False,
@@ -274,21 +274,29 @@ def _add_scatter_data(
     assert len(xaxis) == len(yaxis), "X and Y data need to be the same length"
     xaxis = np.array(xaxis)
     yaxis = np.array(yaxis)
-    yerr = np.array(yerr)
+    if yerr is not None:
+        yerr = np.array(yerr)
 
     # Sorting
     idx = np.argsort(xaxis)
     xaxis = np.array(xaxis)
     yaxis = np.array(yaxis)
-    yerr = np.array(yerr)
+    if yerr is not None:
+        yerr = np.array(yerr)
     xaxis = xaxis[idx]
     yaxis = yaxis[idx]
-    yerr = yerr[idx]
+    if yerr is not None:
+        yerr = yerr[idx]
     
-    if data_label != "":
+    # if data_label != "":
+    #     axs.errorbar(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color, fmt = marker)
+    # else:
+    #     axs.errorbar(xaxis, yaxis, yerr = yerr,color = main_color, fmt = marker)
+
+    if yerr is not None:
         axs.errorbar(xaxis, yaxis, yerr = yerr, label = data_label, color = main_color, fmt = marker)
     else:
-        axs.errorbar(xaxis, yaxis, yerr = yerr,color = main_color, fmt = marker)
+        axs.scatter(xaxis, yaxis, color = main_color, marker = marker, label = data_label)
 
 
     if linear_fit:
