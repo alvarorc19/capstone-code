@@ -41,7 +41,7 @@ If you are using a conda environment the hdf5 library can be installed from ther
 ### Running the programme
 Once you have all the dependencies installed you shall create a system configuration. To do this you copy and rename `new_project_sample.py`to `new_project.py`
 ```zsh
-$ cp utils/new_project_sample.py utils/new_project.py
+$ cp utils/new_project_sample.py utils/new_project.py && mkdir projects
 ```
  and fill all of your desired settings.
 ```zsh
