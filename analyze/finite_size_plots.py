@@ -386,8 +386,8 @@ def do_susceptibility_vs_length_plot(
     p0 = [1.0, 0.9]  # Initial guess for slope and intercept
     log_x = np.log(xaxis)
     log_y = np.log(yaxis)
-    log_y_err = np.log(yerr)
-    popt, pcov = curve_fit(_linear_model, log_x, log_y, p0=p0)
+    log_y_err = yerr / yaxis
+    popt, pcov = curve_fit(_linear_model, log_x, log_y,sigma = log_y_err, p0=p0)
     perr = np.sqrt(np.diag(pcov))
     error = perr[0]
     f, err = _obtain_numbers_format(error)
