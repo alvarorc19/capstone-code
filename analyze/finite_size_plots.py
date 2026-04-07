@@ -29,6 +29,7 @@ from utils.h5_utils import (
     import_physical_parameter,
 )
 from observables_plots import (
+    get_observables_csv,
     _add_format_plot,
     _add_scatter_data,
     _linear_model,
@@ -409,7 +410,7 @@ def do_susceptibility_vs_length_plot(
     ax = _add_format_plot(
         axs = ax,
         xlabel = "Length $L/a$",
-        ylabel = "Susceptibility $\chi$",
+        ylabel = "Susceptibility $\\chi$",
     )
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
@@ -564,3 +565,188 @@ def do_specific_heat_vs_length_plot(
     fig.savefig(saving_path / f"{directory.name}_alpha_nu_critical.pdf", bbox_inches="tight")
     print("finished specific heat for critical exponents plot")
 
+def do_finite_size_analysis_observable(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        observable: str = "susceptibility",
+        nu:float = 0.5,
+        t_c:float = 0.895,
+        exponent:float = 1,
+    ):
+    saving_path = directory.parent.parent / "analyze" / "output"/f"{directory.name}_finite_size"
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_last" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(20))
+
+
+    i = 0
+    for l, group in df.groupby("L"):
+        group = group.sort_values("temperature")
+        xaxis = group["temperature"].to_numpy()
+        obs_array = group[f"{observable}_value"].to_numpy()
+        obs_err = group[f"{observable}_error"].to_numpy()
+
+        xaxis = ((xaxis-t_c) / t_c) * l**(1 / nu)
+        if observable == "magnetisation":
+            yaxis = obs_array * l ** (exponent / nu)
+            yerr = obs_err* l ** (exponent / nu)
+        else:
+            yaxis = obs_array * l ** (-exponent / nu)
+            yerr = obs_err * l ** (-exponent / nu)
+
+        ax = _add_scatter_data(
+            axs = ax,
+            xaxis = xaxis,
+            yaxis = yaxis,
+            yerr = yerr,
+            data_label = f"$L/a = {l}$",
+            main_color = colors[i],
+            secondary_color = colors[i+1],
+            marker = ".-",
+        )
+
+        i+=1
+
+
+    if observable == "magnetisation":
+        exponentstr = r"\beta"
+        exponentletter = "beta"
+        exponenttitle = r"$\beta$"
+        obs_letter = "m"
+    elif observable == "specific_heat":
+        exponentstr = r"-\alpha"
+        exponentletter = "alpha"
+        exponenttitle = r"$\alpha$"
+        obs_letter = "C"
+    elif observable == "specific_heat_per_spin":
+        exponentstr = r"-\alpha"
+        exponentletter = "alpha"
+        exponenttitle = r"$\alpha$"
+        obs_letter = "c"
+    elif observable == "cluster_susceptibility":
+        exponentstr = r"-\gamma"
+        exponentletter = "gamma"
+        exponenttitle = r"$-\gamma$"
+        obs_letter = "\\chi"
+
+    title = f"$\\nu = {nu:.5f}$, {exponenttitle} $= {exponent:.5f}$"
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel=r"$tL^{1 / \nu}$",
+        ylabel=f"${obs_letter} L^{{{exponentstr} / \\nu}}$",
+        title = title,
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol = 4)
+    nu = f"{nu:.4f}".replace(".", "_")
+    saving_path = saving_path / observable / f"nu_{nu}"
+    saving_path.mkdir(parents = True, exist_ok = True)
+    expontent = f"{exponent:.4f}".replace(".", "_")
+    fig.savefig(saving_path / f"{exponentletter}_{exponent}.pdf", bbox_inches="tight")
+    plt.close(fig)
+    print(f"finished finite size for {observable} for critical exponents plot")
+
+def do_finite_size_analysis_nu(
+        directory:pathlib.Path, 
+        is_deep:bool = False,
+        start:int = 0,
+        observable: str = "cluster_susceptibility",
+        nu:float = 0.5,
+        t_c:float = 0.895,
+        gamma_nu:float = 2.0,
+    ):
+    saving_path = directory.parent.parent / "analyze" / "output"/f"{directory.name}_finite_size"
+    csv_file = directory / "ensemble_observables.csv"
+    if csv_file.exists():
+        df = pd.read_csv(csv_file)
+    else:
+        get_observables_csv(directory, is_deep, start, False)
+        df = pd.read_csv(csv_file)
+
+    df = df[df["energy_value"] != 0.0].reset_index(drop=True)
+    if is_deep:
+        dim = import_physical_parameter(directory / f"{directory.name}_last" / "parameter-config-0", "dimension")
+    else:
+        dim = import_physical_parameter(directory / "parameter-config-0", "dimension")
+    exponent = gamma_nu * nu
+
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=1
+    )
+    cmap = plt.cm.tab20
+    colors = cmap(np.arange(20))
+
+
+    i = 0
+    for l, group in df.groupby("L"):
+        group = group.sort_values("temperature")
+        xaxis = group["temperature"].to_numpy()
+        obs_array = group[f"{observable}_value"].to_numpy()
+        obs_err = group[f"{observable}_error"].to_numpy()
+
+        xaxis = ((xaxis-t_c) / t_c) * l**(1 / nu)
+        if observable == "magnetisation":
+            yaxis = obs_array * l ** (exponent / nu)
+            yerr = obs_err* l ** (exponent / nu)
+        else:
+            yaxis = obs_array * l ** (-gamma_nu)
+            yerr = obs_err * l ** (-gamma_nu)
+
+        ax = _add_scatter_data(
+            axs = ax,
+            xaxis = xaxis,
+            yaxis = yaxis,
+            yerr = yerr,
+            data_label = f"$L/a = {l}$",
+            main_color = colors[i],
+            secondary_color = colors[i+1],
+            marker = ".-",
+        )
+
+        i+=1
+
+
+    if observable == "cluster_susceptibility":
+        exponentstr = r"-\gamma"
+        exponentletter = "gamma"
+        exponenttitle = r"$\gamma$"
+        obs_letter = "\\chi"
+
+    title = f"$\\nu = {nu:.5f}$, {exponenttitle} $= {exponent:.5f}$"
+    ax = _add_format_plot(
+        axs = ax,
+        xlabel=r"$tL^{1 / \nu}$",
+        ylabel=f"${obs_letter} L^{{{exponentstr} / \\nu}}$",
+        title = title,
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(),loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol = 4)
+    nu = f"{nu:.4f}".replace(".", "_")
+    saving_path = saving_path / observable 
+    saving_path.mkdir(parents = True, exist_ok = True)
+    expontent = f"{exponent:.4f}".replace(".", "_")
+    fig.savefig(saving_path / f"{exponentletter}_{exponent}_nu_{nu}.pdf", bbox_inches="tight")
+    plt.close(fig)
+    print(f"finished finite size for {observable} for critical exponents plot")

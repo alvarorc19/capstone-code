@@ -181,7 +181,7 @@ def do_observable_plot(
     )
 
     cmap = plt.cm.tab20
-    colors = cmap(np.arange(30))
+    colors = cmap(np.arange(50))
     if x_data == "temperature":
         i = 0
         for l, group in df.groupby("L"):
