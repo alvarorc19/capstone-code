@@ -73,3 +73,6 @@ The parameters that one can specify are:
 
 ## Analysing the data
 Once you have the run done, you can analyse the data using the Python files in the `analyze/` folder. You just need to fill in the data for your project name and other parameters such as your preferred start for the observables.
+
+## Development 
+The structure of the code is explained in the report, however for a more exhaustive documentation see the [documentation](capstone_code_documentation.pdf)
