@@ -29,26 +29,32 @@
 
 
 struct SimulationParameters {
-    HighFive::DataSet lattice_set;
+    std::unique_ptr<HighFive::DataSet> lattice_set;
+    std::unique_ptr<HighFive::DataSet> magnetisation_set;
+    std::unique_ptr<HighFive::DataSet> energy_set;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set1;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set2;
+    std::unique_ptr<HighFive::DataSet> rg_magnetisation_set3;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set1;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set2;
+    std::unique_ptr<HighFive::DataSet> rg_energy_set3;
+    std::unique_ptr<HighFive::DataSet> cluster_size_set;
     std::string model_type;
     std::filesystem::path project_folder_path;
     int L;
     int dim;
+    size_t N;
     double T;
     double beta;
     double J;
-    int potts_q;
-    int time_steps;
-    double H;
-    std::vector<double> vec_H;
+    int potts_q = 1;
+    // double H;
+    // std::vector<double> vec_H;
     // Always records the last X steps
-    size_t recording_steps;
-    bool record_magnetisation = true;
-    bool record_energy = true;
-    bool record_susceptibility = false;
-    bool record_specific_heat = false;
-    bool record_correlation_length = false;
-    bool record_correlation_function = false;
+    size_t total_sweeps;
+    // bool record_correlation_length = false;
+    // bool record_correlation_function = false;
+    bool rg_method = false;
 };
 
 

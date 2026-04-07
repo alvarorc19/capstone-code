@@ -10,6 +10,8 @@
 using ivec = std::vector<int>;
 using dvec = std::vector<double>;
 
+// (i,j) -> i*L + j; 
+// (i1, i2, ..., in) -> i1 * L^n + i2 * L^{n-1} + ... + i(n-1) * L + in
 template<class T>
 int Lattice<T>::get_1d_index(ivec indices) {
     assert((lattice_dim == indices.size()) &&
@@ -17,7 +19,7 @@ int Lattice<T>::get_1d_index(ivec indices) {
 
     int index = 0;
 
-    for (int i; i < lattice_dim; i++) {
+    for (int i = 0; i < lattice_dim; i++) {
         assert((indices[i] < lattice_length) && "Indices must be in the lattice");
         index += indices[i] * std::pow(lattice_length, lattice_dim - i - 1);
     }
@@ -47,9 +49,9 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
                 // Down
                 neighbours_array[4 * index + 1] = i_down * L + j;
                 // Right
-                neighbours_array[4 * index + 2] = j_up * L + i;
+                neighbours_array[4 * index + 2] = i* L + j_up;
                 // Left
-                neighbours_array[4 * index + 3] = j_down * L + i;
+                neighbours_array[4 * index + 3] = i * L + j_down;
             }
         }
 
@@ -90,4 +92,3 @@ ivec Lattice<T>::calculate_neighbours_table(int L, int dim) {
     }
     return neighbours_array;
 }
-

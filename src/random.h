@@ -6,8 +6,8 @@
 
 namespace rng {
     // Be careful with seed!!!
-    const int seed = 42;
-    inline std::mt19937 engine(seed);
+    inline std::mt19937 engine(0);
+    void update_seed(int new_seed);
     int random_int_number(std::mt19937 &engine, int start = 0, int end = 1);
     double random_angle(std::mt19937 &engine);
     double random_real_number(std::mt19937 &engine);

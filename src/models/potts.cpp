@@ -37,18 +37,18 @@ int PottsModel::compute_spin_neighbours_term(int index) {
     return neigh_sum;
 }
 
-// While computing magnetic field the direction is the number of spin
-// Formula:
-// \sum_{sj} H_{sj} \sum_i \delta(sj,si)
-int PottsModel::compute_spin_magnetic_term(int dim) {
-    int magnetic_sum = 0;
-    
-    for (auto &i: lattice_obj->get_lattice()) {
-        magnetic_sum += delta_function(dim, i);
-    }
-
-    return magnetic_sum;
-}
+// // While computing magnetic field the direction is the number of spin
+// // Formula:
+// // \sum_{sj} H_{sj} \sum_i \delta(sj,si)
+// int PottsModel::compute_spin_magnetic_term(int dim) {
+//     int magnetic_sum = 0;
+//     
+//     for (auto &i: lattice_obj->get_lattice()) {
+//         magnetic_sum += delta_function(dim, i);
+//     }
+//
+//     return magnetic_sum;
+// }
 
 double PottsModel::compute_total_energy() {
     double total_energy;

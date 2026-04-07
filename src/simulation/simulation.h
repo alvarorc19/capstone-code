@@ -5,6 +5,7 @@
 #include "models/modelBase.h"
 #include <iostream>
 #include <vector>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <cmath>
@@ -15,32 +16,196 @@
 using ivec = std::vector<int>;
 using dvec = std::vector<double>;
 
-//include highfive and toml here
-//for both reading and writing
-
-// template <typename T>
+/**
+ * @class Simulation
+ * @brief The Simulation class handles the overall simulation process,
+ * including parameter parsing, model initialization, running the simulation,
+ * and writing outputs.
+ */
 class Simulation {
     private:
-        SimulationParameters parameters;
-        Observables observables;
-        std::unique_ptr<HighFive::File> file;
+        SimulationParameters parameters;/**< a SimulationParameters object that stores all the parameters needed for the simulation */ 
+        Observables observables;/**< an Observables object that stores measurements during the simulation */
+        std::unique_ptr<HighFive::File> file;/**< a unique_ptr element that points to the HDF5 output file */
         int time_step = 0;
-        std::unique_ptr<ModelBase> model;
+        int spins_flipped = 0;
+        ivec cluster_stack;
+        ivec cluster_size;
+        std::vector<uint8_t> visited;
+        std::unique_ptr<ModelBase> model;/**< a unique_ptr element that points to any of the models created with the Model class or its parent ModelBase */
 
+        /**
+         * @brief Extract an integer vector from a toml array
+         * 
+         * @param array array inherited from toml obtained from the file
+         * @return ivec data of toml array in int vector
+         */
         ivec extract_int_vector_toml(const toml::array& array);
+
+        /**
+         * @brief Extract a double vector from a toml array
+         * 
+         * @param array array inherited from toml obtained from the file
+         * @return dvec data of toml array in double vector
+         */
         dvec extract_double_vector_toml(const toml::array& array);
 
     public:
-        Simulation() =default;
-        void parse_parameters(std::string project_folder, std::string model_type);
+        /**
+         * @brief Construct a new Simulation object
+         * 
+         */
+        Simulation() = default;
+
+        /**
+         * @brief Parse the parameters from the toml file
+         * 
+         * @param project_folder_path std::filesystem::path to the project folder
+         * @param model_type std::string specifying the model type
+         */
+        void parse_parameters(std::filesystem::path project_folder_path, std::string model_type);
+
+        /**
+         * @brief Selects the model to be used
+         * 
+         * @details Given a model parsed from the terminal it assigns the ModelBase pointer
+         * to the correpsondent model class to execute the simulation
+         * 
+         */
         void initialise_model();
+
+        /**
+         * @brief Initialises writing objects
+         * 
+         * @details Given the file pointer it creates the h5 file corresponding to that run.
+         * It also creates the lattice dataset and dataspace as well as reserving space and defining the chunk size
+         * for later writing.
+         * 
+         */
         void initialise_writing();
+
+        /* @brief Cleans writing objects
+         *
+         */
+        void close_writing();
+        
+        /**
+         * @brief It executes the simulation, a full run corresponding to the time steps. Chooses 
+         * between using renormalisation or not if specified 
+         * 
+         */
         void run();
+
+        /**
+         * @brief It executes the simulation, a full run corresponding to the time steps
+         * 
+         */
+        void normal_run();
+
+        /**
+         * @brief It exeucutes the simulation using renormalisation group methods
+         * in 2D to store the data for further analysis
+         * 
+         */
+        void rg_run_2d();
+        /**
+         * @brief It exeucutes the simulation using renormalisation group methods
+         * in 3D to store the data for further analysis
+         * 
+         */
+        void rg_run_3d();
+
+        /**
+         * @brief executes a single Metropolis step
+         * 
+         */
         void do_metropolis_step();
+
+        /**
+         * @brief executes a sweep of the lattice
+         * 
+         */
+        void do_metropolis_sweep();
+
+        /**
+         * @brief Executes a full sweep of Metropolis steps while recording observables
+         * 
+         * @details TODO: explain algorithm
+         */
+        void do_metropolis_recording_sweep();
+
+        //TODO
         void do_cluster_step();
+        void do_cluster_sweep();
+
+        /**
+         * @brief  Writes the lattice in the dataset at a given time step
+         * 
+         * @details It resizes the dataset to accomodate the new time step and writes the lattice into the dataset
+         * stored in the SimulationParameters struct.
+         * 
+         * @param time int time step
+         */
         void write_lattice(int time);
-        void write_observables();
-        void update_observables();
+
+        /**
+         * @brief writes the observables into the h5 file after the run from the Observables object for the batch, currently it is $2^9$ to have easy bitwise 
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_observables_after_loop(hsize_t start);
+
+        /**
+         * @brief writes the renormalised observables into the h5 file after
+         * the run from the Observables object for the batch, currently
+         * it is $2^9$ to have easy bitwise 
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_rg_observables_after_loop(hsize_t start);
+
+        /**
+         * @brief writes the observables into the h5 file for the last batch of steps.
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_observables_final(hsize_t start, dvec energy, dvec x_magnetisation,dvec y_magnetisation, dvec cluster_size);
+
+        /**
+         * @brief writes the renormalised observables into the h5 file
+         * for the last batch of steps.
+         *
+         * @param start int position from which to start writing
+         * 
+         */
+        void write_rg_observables_final(hsize_t start, dvec rg_energy1, dvec rg_energy2, dvec rg_energy3, dvec rg_x_magnetisation1,dvec rg_x_magnetisation2,dvec rg_x_magnetisation3, dvec rg_y_magnetisation1,dvec rg_y_magnetisation2, dvec rg_y_magnetisation3);
+
+        /**
+         * @brief Updates the observables stored in the Observables object
+         *
+         * @param position int gets the position of the array to save observable
+         * 
+         */
+        void update_observables(int position, ivec & cluster_size);
+
+        /**
+         * @brief Updates the observables stored in the Observables object
+         * corresponding to renormalisation
+         *
+         * @param position int gets the position of the array to save observable
+         * @param b1 int first scale factor used
+         * @param b2 int second scale factor used
+         * @param neigh_table1 int vector neighbours table for b1
+         * @param neigh_table2 int vector neighbours table for b2
+         * 
+         */
+        void update_rg_observables(int position, int b1, int b2,int b3, ivec & neigh_table1, ivec & neigh_table2, ivec & neigh_table3);
+        void update_rg_observables_3d(int position, int b1, int b2, ivec & neigh_table1, ivec & neigh_table2);
+
+        double compute_average_cluster_size(ivec & cluster_size);
 };
 
 #endif

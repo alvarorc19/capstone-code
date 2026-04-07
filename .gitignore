@@ -32,6 +32,7 @@
 *.la
 *.a
 *.lib
+*.ipynb_checkpoints
 
 # Executables
 *.exe
@@ -39,6 +40,21 @@
 *.app
 build/*
 result/
+tmp.sh
+hpc_run.sh
+
+# Output
+analyze/output/*
+!analyze/output
+*.toml
+
+# Input
+utils/new_project.py
+
+# Vscode environment
+.vscode
+.git
+.gitattributes
 
 # Outputs
 *.mp4
@@ -47,6 +63,8 @@ result/
 analyze/*.mp4
 analyze/*.gif
 projects/*
+*.png
+*.pdf
 !projects/demo/config.toml
 *.pdf
 *.txt
@@ -71,6 +89,10 @@ utils/new_project.py
 
 # Documentation generated
 docs/*
+!docs
+
+# Python stuff
+__pycache__/
 
 # Python stuff
 __pycache__/
