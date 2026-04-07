@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+.codex
 
 # Compiled Object files
 *.slo
@@ -43,11 +44,21 @@ result/
 *.mp4
 *.gif
 *.h5
-analyze/*.html
 analyze/*.mp4
 analyze/*.gif
 projects/*
 !projects/demo/config.toml
+*.pdf
+*.txt
+*.csv
+analyze/*.pdf
+analyze/*.txt
+analyze/*.csv
+analyze/*.png
+analyze/*.html
+*.png
+
+utils/new_project.py
 
 # debug information files
 *.dwo
@@ -60,4 +71,7 @@ projects/*
 
 # Documentation generated
 docs/*
+
+# Python stuff
+__pycache__/
 
