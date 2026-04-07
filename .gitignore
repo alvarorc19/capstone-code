@@ -32,6 +32,7 @@
 *.la
 *.a
 *.lib
+*.ipynb_checkpoints
 
 # Executables
 *.exe

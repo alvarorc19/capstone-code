@@ -7,13 +7,13 @@ import json
 from itertools import product
 
 project_folder = "./projects"
-project_name = "direc_test"
+project_name = "demo"
 
 total_sweeps = 1000
-L = 100
+L = 50 # will be overwritten if length_array is not empty
 dim = 2
 N = L**dim
-temp = 0.2
+temp = 1.5 # will be overwritten if temp_array is not empty
 seed_number = 0
 
 def get_git_hash():
@@ -35,6 +35,8 @@ parameters = {
     },
     "simulation_settings" : {
         "total_sweeps" : total_sweeps,
+        # "record_correlation_length" : False,
+        # "record_correlation_function" : False,
         "rg_method": False,
     },
     "git_hash":get_git_hash(),
@@ -45,16 +47,20 @@ base.mkdir(parents=True, exist_ok=False)
 print("Base directory: ", base)
 
 
-# Various temperatures
-# temp_array = np.linspace(0.3,1.5, 20).tolist()
+# # Arrays for various temperatures. 
+# # Make sure it is always a list!!
+# temp_array = np.linspace(2.0,2.3, 30, dtype=float).tolist()
+# temp_array = [0.4,0.5,0.6,0.7,0.8]
 temp_array = []
 
-# Varius sizes
+# # Arrays for various sizes. 
+# # Make sure it is always a list!!
 # length_array = np.linspace(10, 1000, 5, dtype=int).tolist()
+# length_array = [8, 16, 32, 40]
 length_array = []
 
 global_parameters = copy.deepcopy(parameters)
-hpc = True
+hpc = False # specify if you want more subdirectories, in general not recommended
 
 
 if (temp_array and not length_array):
@@ -158,8 +164,8 @@ elif (temp_array and length_array):
             direc.mkdir(parents = True, exist_ok = False)
             for j in range(16):
                 t, l = combinations[16 * i + j]
-                parameters["physical_settings"]["L"] = l
-                parameters["physical_settings"]["temperature"] = t
+                parameters["physical_settings"]["L"] = int(l.item())
+                parameters["physical_settings"]["temperature"] = t.item()
 
                 config_path = direc / f"parameter-config-{j}"
                 config_path.mkdir(exist_ok=True)
@@ -170,8 +176,8 @@ elif (temp_array and length_array):
         direc.mkdir(parents = True, exist_ok = False)
         for k in range(remaining):
             t, l = combinations[num_sub_direc + k]
-            parameters["physical_settings"]["L"] = l
-            parameters["physical_settings"]["temperature"] = t
+            parameters["physical_settings"]["L"] = int(l.item())
+            parameters["physical_settings"]["temperature"] = t.item()
 
             config_path = direc / f"parameter-config-{k}"
             config_path.mkdir(exist_ok=True)
@@ -179,12 +185,12 @@ elif (temp_array and length_array):
                 toml.dump(parameters, f)
 
     else:
-        total_parameters = len(temp_array)
+        total_parameters = len(temp_array) * len(length_array)
         direc = base
         for i in range(total_parameters):
             t, l = combinations[i]
-            parameters["physical_settings"]["L"] = l
-            parameters["physical_settings"]["temperature"] = t
+            parameters["physical_settings"]["L"] = int(l.item())
+            parameters["physical_settings"]["temperature"] = t.item()
 
             config_path = direc / f"parameter-config-{i}"
             config_path.mkdir(exist_ok=True)

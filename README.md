@@ -39,11 +39,15 @@ In order to generate results Python is used and the whole system is built with t
 If you are using a conda environment the hdf5 library can be installed from there similarly to the case done with pixi.
 
 ### Running the programme
-Once you have all the dependencies installed you shall create a system configuration. To do this you copy and rename `new_project_sample.py`to `new_project.py` and fill all of your desired settings. Running the programme,
+Once you have all the dependencies installed you shall create a system configuration. To do this you copy and rename `new_project_sample.py`to `new_project.py`
+```zsh
+$ cp utils/new_project_sample.py utils/new_project.py
+```
+ and fill all of your desired settings.
 ```zsh
 $ python3 utils/new_project.py
 ```
-creates a folder under `projects` with the name given and the parameters specified.
+creates a folder under `projects` with the name given and the parameters specified in the file.
 
 #### Build and run
 create and go to the build directory, or run this for short:
@@ -63,8 +67,9 @@ The parameters that one can specify are:
 - `-p`: This is the project where the programme is going to get the information. It gets as path the root directory so you just need to specify the project folder and the name of project. For example: `projects/demo`.
 - `-m`: This gets the model that the system is going to use to perform the Monte Carlo simulations. The options implemented are:
     - `xy`: The XY model
-    - `potts`: The Potts model
-    - `ising`: The Ising model
+    - `potts`: The Potts model (Might not work)
+    - `ising`: The Ising model (Might not work)
 - `-j`: Indicates the number of cores to be used in the simulation, managed by OpenMP.
 
-## Development guide(TODO)
+## Analysing the data
+Once you have the run done, you can analyse the data using the Python files in the `analyze/` folder. You just need to fill in the data for your project name and other parameters such as your preferred start for the observables.
