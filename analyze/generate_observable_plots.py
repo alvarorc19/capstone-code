@@ -54,7 +54,7 @@ def main():
         # project_root / "20260326_15t0_8-1_2_13l32-1024_dim3_10-4sweeps",
         # project_root / "20260330_30t0_8-1_2_4l16-40_dim2_10-3sweeps",
         project_root / "20260403_t2-201_10l16-100_dim3_10-4sweeps",
-        project_root / "20260403_t0-895_10l16-1024_dim2_10-4sweeps"
+        # project_root / "20260403_t0-895_10l16-1024_dim2_10-4sweeps"
         # project_root / "20260401_30t1_9-2_5_5l16-64_dim3_10-3sweeps"
         # # Thinkpad
         # project_root / "20260401_30t2-0_2-5_4l8_40_dim3_rg_10-3sweeps",
